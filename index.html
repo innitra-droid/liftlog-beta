@@ -1409,7 +1409,9 @@ function renderAll() {
 
 function autoNavigate() {
   // Clean stale log entries from weeks with no done days
-  for (var w in S.logs) {
+  var logWeeks = Object.keys(S.logs);
+  for (var li = 0; li < logWeeks.length; li++) {
+    var w = logWeeks[li];
     var hasAnyDone = false;
     for (var k in S.doneDays) {
       if (S.doneDays[k] && parseInt(k.split('_')[0]) == w) { hasAnyDone = true; break; }
