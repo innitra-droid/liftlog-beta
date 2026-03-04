@@ -1408,26 +1408,15 @@ function renderAll() {
 }
 
 function autoNavigate() {
-  // Clean stale log entries from weeks with no done days
-  var logWeeks = Object.keys(S.logs);
-  for (var li = 0; li < logWeeks.length; li++) {
-    var w = logWeeks[li];
-    var hasAnyDone = false;
-    for (var k in S.doneDays) {
-      if (S.doneDays[k] && parseInt(k.split('_')[0]) == w) { hasAnyDone = true; break; }
-    }
-    if (!hasAnyDone) delete S.logs[w];
-  }
-
   var doneKeys = Object.keys(S.doneDays).filter(function(k){ return S.doneDays[k]; });
 
-  // No completed days — reset to week 1 day 1
+  // No completed days — week 1 day 1
   if (doneKeys.length === 0) {
     S.week = 1; S.day = S.program[0].day;
     renderAll(); return;
   }
 
-  // Find latest week with completed days (not just log entries)
+  // Find latest week that has actual completed days
   var latestWeek = 1;
   for (var i = 0; i < doneKeys.length; i++) {
     var wk = parseInt(doneKeys[i].split('_')[0]);
@@ -1435,13 +1424,14 @@ function autoNavigate() {
   }
   S.week = latestWeek;
 
-  // Find first incomplete non-pure-rest day
+  // First incomplete non-rest day in that week
   for (var i = 0; i < S.program.length; i++) {
     var d = S.program[i];
     if (d.rest && d.restLabel !== 'Cardio') continue;
     if (!S.doneDays[S.week + '_' + d.day]) { S.day = d.day; renderAll(); return; }
   }
-  // All training days done — move to next week
+
+  // All done — next week
   if (S.week < 12) { S.week++; S.day = S.program[0].day; }
   renderAll();
 }
