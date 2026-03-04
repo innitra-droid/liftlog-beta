@@ -1,4 +1,4 @@
-var CACHE = 'liftlog-beta-v1';
+var CACHE = 'liftlog-beta-v3';
 var ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,6 @@ var ASSETS = [
   './icon-512.png'
 ];
 
-// Install — cache assets
 self.addEventListener('install', function(e) {
   self.skipWaiting();
   e.waitUntil(
@@ -17,7 +16,6 @@ self.addEventListener('install', function(e) {
   );
 });
 
-// Activate — clear old caches
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
@@ -29,18 +27,15 @@ self.addEventListener('activate', function(e) {
   );
 });
 
-// Fetch — network first, fall back to cache
 self.addEventListener('fetch', function(e) {
   e.respondWith(
     fetch(e.request).then(function(response) {
-      // Update cache with fresh response
       var copy = response.clone();
       caches.open(CACHE).then(function(cache) {
         cache.put(e.request, copy);
       });
       return response;
     }).catch(function() {
-      // Offline — serve from cache
       return caches.match(e.request);
     })
   );
