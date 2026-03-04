@@ -205,16 +205,28 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .btn-p{flex:1;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#000;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer}
 .btn-s{padding:11px 18px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.9rem;cursor:pointer}
 
-/* BOTTOM NAV */
+/* PULL TO REFRESH */
+.ptr-indicator{text-align:center;padding:12px;font-size:.72rem;color:var(--muted);display:none}
+.ptr-indicator.show{display:block}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom));transition:transform .25s}
 .bottom-nav.hidden{transform:translateY(100%)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:color .15s}
 .nav-btn .ni{font-size:1.1rem}
 .nav-btn.active{color:var(--accent)}
 
-/* PULL TO REFRESH */
-.ptr-indicator{text-align:center;padding:12px;font-size:.72rem;color:var(--muted);display:none}
-.ptr-indicator.show{display:block}
+/* HEALTH */
+#healthView{padding-bottom:80px}
+.health-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.health-card-date{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
+.health-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hm{text-align:center;background:var(--surface);border-radius:10px;padding:8px 6px}
+.hm .hm-icon{font-size:1.1rem;margin-bottom:2px}
+.hm .hm-val{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--accent);line-height:1}
+.hm .hm-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-top:2px}
+.hm .hm-sub{font-size:.65rem;color:var(--sub);margin-top:1px}
+.health-empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:.85rem;line-height:1.8}
+.health-chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.health-chart-title{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -315,6 +327,27 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
 </div>
 
+<!-- HEALTH VIEW -->
+<div id="healthView" class="view">
+  <div class="app-header">
+    <h1>HEALTH</h1>
+    <div class="hdr-btns">
+      <button class="hdr-btn" onclick="document.getElementById('healthImport').click()">&#11015; Import CSVs</button>
+    </div>
+  </div>
+  <input type="file" id="healthImport" accept=".csv" multiple style="display:none" onchange="importHealthCSVs(event)">
+  <div style="padding:10px 16px 4px">
+    <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px">View</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="prog-view-tab active" id="hvtCards" onclick="setHealthView('cards')">&#128197; Daily</button>
+      <button class="prog-view-tab" id="hvtSleep" onclick="setHealthView('sleep')">&#128564; Sleep</button>
+      <button class="prog-view-tab" id="hvtSteps" onclick="setHealthView('steps')">&#128694; Steps</button>
+      <button class="prog-view-tab" id="hvtHR" onclick="setHealthView('hr')">&#10084; Heart Rate</button>
+    </div>
+  </div>
+  <div id="healthContent" style="padding:0 16px 100px"></div>
+</div>
+
 <!-- MAXES MODAL -->
 <div class="modal-ov" id="maxModal">
   <div class="modal">
@@ -332,8 +365,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
   <button class="nav-btn active" id="navMain" onclick="openView('mainView')"><span class="ni">&#127947;</span>Train</button>
-  <button class="nav-btn" id="navTable" onclick="openView('tableView')"><span class="ni">&#128203;</span>Table</button>
   <button class="nav-btn" id="navProgress" onclick="openView('progressView')"><span class="ni">&#128200;</span>Progress</button>
+  <button class="nav-btn" id="navHealth" onclick="openView('healthView')"><span class="ni">&#10084;</span>Health</button>
+  <button class="nav-btn" id="navTable" onclick="openView('tableView')"><span class="ni">&#128203;</span>Table</button>
   <button class="nav-btn" id="navEdit" onclick="openView('editView')"><span class="ni">&#9998;</span>Edit</button>
 </div>
 
@@ -391,7 +425,8 @@ var S = {
   maxes: {squat:165, deadlift:220, bench:105},
   program: JSON.parse(JSON.stringify(DEFAULT_PROGRAM)),
   logs: {}, doneDays: {},
-  week: 1, day: 1, editDay: 1, progLift: 'Squat'
+  week: 1, day: 1, editDay: 1, progLift: 'Squat',
+  health: {} // keyed by date: {sleep:{score,efficiency,duration_min}, steps:{count,distance_km}, hr:{avg,min,max}}
 };
 
 var SUPA_URL = 'https://pjurohuntyehfkbwbwtv.supabase.co';
@@ -498,6 +533,7 @@ function applyData(parsed) {
   S.day = parsed.day || 1;
   S.editDay = parsed.editDay || 1;
   S.progLift = parsed.progLift || 'Squat';
+  S.health = parsed.health || {};
 }
 
 function loadFromLocal() {
@@ -609,13 +645,14 @@ function openView(id) {
   var views = document.querySelectorAll('.view');
   for (var i = 0; i < views.length; i++) views[i].classList.remove('active');
   document.getElementById(id).classList.add('active');
-  var navMap = {mainView:'navMain',tableView:'navTable',progressView:'navProgress',editView:'navEdit'};
+  var navMap = {mainView:'navMain',tableView:'navTable',progressView:'navProgress',editView:'navEdit',healthView:'navHealth'};
   var navBtns = document.querySelectorAll('.nav-btn');
   for (var i = 0; i < navBtns.length; i++) navBtns[i].classList.remove('active');
   if (navMap[id]) document.getElementById(navMap[id]).classList.add('active');
   if (id === 'progressView') renderProgress();
   if (id === 'editView') renderEditView();
   if (id === 'tableView') renderTable();
+  if (id === 'healthView') renderHealth();
   window.scrollTo(0, 0);
 }
 
@@ -1389,6 +1426,178 @@ function autoNavigate() {
   }
   if (S.week < 12) { S.week++; S.day = S.program[0].day; }
   renderAll();
+}
+
+// ── HEALTH ──
+var healthView = 'cards';
+
+function setHealthView(v) {
+  healthView = v;
+  var tabs = ['cards','sleep','steps','hr'];
+  var ids = ['hvtCards','hvtSleep','hvtSteps','hvtHR'];
+  for (var i = 0; i < tabs.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) el.classList.toggle('active', tabs[i] === v);
+  }
+  renderHealth();
+}
+
+function renderHealth() {
+  var cont = document.getElementById('healthContent');
+  if (!cont) return;
+  var dates = Object.keys(S.health).sort().reverse();
+  if (!dates.length) {
+    cont.innerHTML = '<div class="health-empty">&#10084;&#65039;<br><br>No health data yet.<br>Tap <strong>Import CSVs</strong> above and select<br>the CSV files from your Samsung Health export.</div>';
+    return;
+  }
+  if (healthView === 'cards') renderHealthCards(dates, cont);
+  else renderHealthChart(dates, cont, healthView === 'sleep' ? 'sleep' : healthView === 'steps' ? 'steps' : 'hr');
+}
+
+function renderHealthCards(dates, cont) {
+  var html = '';
+  for (var i = 0; i < dates.length; i++) {
+    var d = dates[i];
+    var h = S.health[d];
+    html += '<div class="health-card"><div class="health-card-date">' + d + '</div><div class="health-metrics">';
+    if (h.sleep) {
+      var hrs = h.sleep.duration_min ? Math.floor(h.sleep.duration_min/60)+'h '+(h.sleep.duration_min%60)+'m' : '—';
+      html += '<div class="hm"><div class="hm-icon">&#128564;</div><div class="hm-val">'+(h.sleep.score||'—')+'</div><div class="hm-lbl">Sleep Score</div><div class="hm-sub">'+hrs+'</div></div>';
+    } else { html += '<div class="hm"><div class="hm-icon">&#128564;</div><div class="hm-val">—</div><div class="hm-lbl">Sleep</div></div>'; }
+    if (h.steps) {
+      html += '<div class="hm"><div class="hm-icon">&#128694;</div><div class="hm-val">'+Number(h.steps.count).toLocaleString()+'</div><div class="hm-lbl">Steps</div><div class="hm-sub">'+h.steps.distance_km+' km</div></div>';
+    } else { html += '<div class="hm"><div class="hm-icon">&#128694;</div><div class="hm-val">—</div><div class="hm-lbl">Steps</div></div>'; }
+    if (h.hr) {
+      html += '<div class="hm"><div class="hm-icon">&#10084;</div><div class="hm-val">'+h.hr.avg+'</div><div class="hm-lbl">Avg HR</div><div class="hm-sub">'+h.hr.min+'–'+h.hr.max+' bpm</div></div>';
+    } else { html += '<div class="hm"><div class="hm-icon">&#10084;</div><div class="hm-val">—</div><div class="hm-lbl">Heart Rate</div></div>'; }
+    html += '</div></div>';
+  }
+  cont.innerHTML = html;
+}
+
+function renderHealthChart(dates, cont, metric) {
+  var sorted = dates.slice().sort();
+  var points = [];
+  for (var i = 0; i < sorted.length; i++) {
+    var d = sorted[i]; var h = S.health[d]; var val = null;
+    if (metric === 'sleep' && h.sleep) val = parseFloat(h.sleep.score)||null;
+    if (metric === 'steps' && h.steps) val = parseFloat(h.steps.count)||null;
+    if (metric === 'hr' && h.hr) val = h.hr.avg||null;
+    if (val !== null) points.push({date:d, val:val});
+  }
+  var titles = {sleep:'Sleep Score', steps:'Daily Steps', hr:'Avg Heart Rate (bpm)'};
+  var colors = {sleep:'#4da6ff', steps:'#c8ff00', hr:'#ff4d4d'};
+  var color = colors[metric];
+  var html = '<div class="health-chart-card"><div class="health-chart-title">'+titles[metric]+'</div>';
+  if (points.length < 2) {
+    html += '<div style="height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem">Need more data</div>';
+  } else {
+    var mn = Infinity, mx = -Infinity;
+    for (var i = 0; i < points.length; i++) { if (points[i].val<mn) mn=points[i].val; if (points[i].val>mx) mx=points[i].val; }
+    var range = mx-mn; if (range===0){mn=mn*0.9;mx=mx*1.1;range=mx-mn;} else {mn=mn-range*0.1;mx=mx+range*0.1;}
+    var W=300,H=100,pts='',area1='',area2='',circles='',labels='';
+    for (var i = 0; i < points.length; i++) {
+      var x=(i/(points.length-1))*W, y=H-((points[i].val-mn)/(mx-mn))*H;
+      if (i>0){pts+=' ';area1+=' ';}
+      pts+=x+','+y; area1+=x+','+y;
+      circles+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+color+'"/>';
+      labels+='<text x="'+x+'" y="'+(y-7)+'" text-anchor="middle" font-size="7" fill="'+color+'" font-family="DM Sans,sans-serif">'+points[i].val+'</text>';
+      labels+='<text x="'+x+'" y="'+(H+10)+'" text-anchor="middle" font-size="6" fill="var(--muted)" font-family="DM Sans,sans-serif">'+points[i].date.slice(5)+'</text>';
+    }
+    for (var i=points.length-1;i>=0;i--){area2+=' '+((i/(points.length-1))*W)+','+H;}
+    html+='<div style="width:100%;height:120px"><svg viewBox="0 -10 '+W+' '+(H+16)+'" preserveAspectRatio="none" style="width:100%;height:100%">'
+      +'<defs><linearGradient id="hcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity=".2"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0"/></linearGradient></defs>'
+      +'<polygon points="'+area1+area2+'" fill="url(#hcg)"/>'
+      +'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+      +circles+labels+'</svg></div>';
+  }
+  html += '</div>';
+  for (var i=points.length-1;i>=0;i--) {
+    var prev = i>0?points[i-1]:null;
+    var delta = prev?Math.round((points[i].val-prev.val)*10)/10:null;
+    var dh = delta!==null?'<span class="delta '+(delta>0?'up':delta<0?'dn':'eq')+'">'+(delta>0?'+':'')+delta+'</span>':'';
+    html+='<div class="prog-entry"><div><div class="pe-wk">'+points[i].date+'</div><div class="pe-val">'+points[i].val+'</div></div>'+dh+'</div>';
+  }
+  cont.innerHTML = html;
+}
+
+function importHealthCSVs(event) {
+  var files = event.target.files; if (!files.length) return;
+  var loaded = 0, total = files.length;
+  for (var i = 0; i < files.length; i++) {
+    (function(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        parseHealthCSV(file.name, e.target.result);
+        loaded++;
+        if (loaded === total) { save(); renderHealth(); toast('Imported — '+Object.keys(S.health).length+' days of data'); }
+      };
+      reader.readAsText(file);
+    })(files[i]);
+  }
+  event.target.value = '';
+}
+
+function parseHealthCSV(filename, text) {
+  var lines = text.split('\n');
+  if (lines.length < 3) return;
+  var headers = lines[1].split(',').map(function(h){ return h.trim().replace(/\uFEFF/g,''); });
+  function getCol(row, key) { var idx=headers.indexOf(key); return idx>=0?(row[idx]||'').trim():''; }
+
+  if (filename.indexOf('shealth_sleep_2')!==-1 && filename.indexOf('stage')===-1 && filename.indexOf('raw')===-1) {
+    for (var i=2;i<lines.length;i++) {
+      var row=lines[i].split(','); if (row.length<5) continue;
+      try {
+        var start=getCol(row,'com.samsung.health.sleep.start_time');
+        var end=getCol(row,'com.samsung.health.sleep.end_time');
+        if (!start) continue;
+        var date=start.substring(0,10);
+        var startMs=new Date(start).getTime(), endMs=new Date(end).getTime();
+        var duration_min=isNaN(startMs)||isNaN(endMs)?0:Math.round((endMs-startMs)/60000);
+        var score=getCol(row,'sleep_score'), efficiency=getCol(row,'efficiency');
+        if (!S.health[date]) S.health[date]={};
+        S.health[date].sleep={score:score||'',efficiency:efficiency||'',duration_min:duration_min};
+      } catch(e){}
+    }
+  }
+
+  if (filename.indexOf('pedometer_day_summary')!==-1) {
+    for (var i=2;i<lines.length;i++) {
+      var row=lines[i].split(','); if (row.length<5) continue;
+      try {
+        var dayTime=getCol(row,'day_time'); if (!dayTime) continue;
+        var date=new Date(parseInt(dayTime)).toISOString().substring(0,10);
+        var steps=parseInt(getCol(row,'step_count'))||0;
+        var distance=parseFloat(getCol(row,'distance'))||0;
+        if (steps===0) continue;
+        if (!S.health[date]) S.health[date]={};
+        if (!S.health[date].steps||(steps>S.health[date].steps.count)) {
+          S.health[date].steps={count:steps,distance_km:Math.round(distance/10)/100};
+        }
+      } catch(e){}
+    }
+  }
+
+  if (filename.indexOf('heart_rate')!==-1) {
+    var daily={};
+    for (var i=2;i<lines.length;i++) {
+      var row=lines[i].split(','); if (row.length<5) continue;
+      try {
+        var startTime=getCol(row,'com.samsung.health.heart_rate.start_time');
+        var hr=parseFloat(getCol(row,'com.samsung.health.heart_rate.heart_rate'));
+        if (!startTime||isNaN(hr)||hr<=0) continue;
+        var date=startTime.substring(0,10);
+        if (!daily[date]) daily[date]=[];
+        daily[date].push(hr);
+      } catch(e){}
+    }
+    for (var date in daily) {
+      var vals=daily[date];
+      var avg=Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10;
+      if (!S.health[date]) S.health[date]={};
+      S.health[date].hr={avg:avg,min:Math.min.apply(null,vals),max:Math.max.apply(null,vals)};
+    }
+  }
 }
 
 load();
