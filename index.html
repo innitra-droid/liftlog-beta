@@ -1408,16 +1408,25 @@ function renderAll() {
 }
 
 function autoNavigate() {
+  // Clean stale log entries from weeks with no done days
+  for (var w in S.logs) {
+    var hasAnyDone = false;
+    for (var k in S.doneDays) {
+      if (S.doneDays[k] && parseInt(k.split('_')[0]) == w) { hasAnyDone = true; break; }
+    }
+    if (!hasAnyDone) delete S.logs[w];
+  }
+
   var doneKeys = Object.keys(S.doneDays).filter(function(k){ return S.doneDays[k]; });
 
-  // No completed days at all — just render whatever was saved
-  if (doneKeys.length === 0) { renderAll(); return; }
-
-  // Find latest week with any progress
-  var latestWeek = 1;
-  for (var w = 1; w <= 12; w++) {
-    if (S.logs[w] && Object.keys(S.logs[w]).length > 0) latestWeek = w;
+  // No completed days — reset to week 1 day 1
+  if (doneKeys.length === 0) {
+    S.week = 1; S.day = S.program[0].day;
+    renderAll(); return;
   }
+
+  // Find latest week with completed days (not just log entries)
+  var latestWeek = 1;
   for (var i = 0; i < doneKeys.length; i++) {
     var wk = parseInt(doneKeys[i].split('_')[0]);
     if (wk > latestWeek) latestWeek = wk;
