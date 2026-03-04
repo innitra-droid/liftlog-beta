@@ -1408,22 +1408,26 @@ function renderAll() {
 }
 
 function autoNavigate() {
+  var doneKeys = Object.keys(S.doneDays).filter(function(k){ return S.doneDays[k]; });
+
+  // No completed days at all — just render whatever was saved
+  if (doneKeys.length === 0) { renderAll(); return; }
+
+  // Find latest week with any progress
   var latestWeek = 1;
   for (var w = 1; w <= 12; w++) {
     if (S.logs[w] && Object.keys(S.logs[w]).length > 0) latestWeek = w;
   }
-  var doneKeys = Object.keys(S.doneDays);
   for (var i = 0; i < doneKeys.length; i++) {
-    if (S.doneDays[doneKeys[i]]) {
-      var wk = parseInt(doneKeys[i].split('_')[0]);
-      if (wk > latestWeek) latestWeek = wk;
-    }
+    var wk = parseInt(doneKeys[i].split('_')[0]);
+    if (wk > latestWeek) latestWeek = wk;
   }
   S.week = latestWeek;
+
   // Find first incomplete non-pure-rest day
   for (var i = 0; i < S.program.length; i++) {
     var d = S.program[i];
-    if (d.rest && d.restLabel !== 'Cardio') continue; // skip pure rest days
+    if (d.rest && d.restLabel !== 'Cardio') continue;
     if (!S.doneDays[S.week + '_' + d.day]) { S.day = d.day; renderAll(); return; }
   }
   // All training days done — move to next week
@@ -1615,6 +1619,18 @@ function parseHealthCSV(filename, text) {
 }
 
 load();
-</script>
-</body>
-</html>
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    reg.update();
+    reg.addEventListener('updatefound', function() {
+      var newWorker = reg.installing;
+      newWorker.addEventListener('statechange', function() {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          window.location.reload();
+        }
+      });
+    });
+  });
+}
+
