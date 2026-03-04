@@ -1462,7 +1462,8 @@ function renderHealthCards(dates, cont) {
     html += '<div class="health-card"><div class="health-card-date">' + d + '</div><div class="health-metrics">';
     if (h.sleep) {
       var hrs = h.sleep.duration_min ? Math.floor(h.sleep.duration_min/60)+'h '+(h.sleep.duration_min%60)+'m' : '—';
-      html += '<div class="hm"><div class="hm-icon">&#128564;</div><div class="hm-val">'+(h.sleep.score||'—')+'</div><div class="hm-lbl">Sleep Score</div><div class="hm-sub">'+hrs+'</div></div>';
+      var sleepScore = h.sleep.score && h.sleep.score !== '' ? h.sleep.score : '—';
+      html += '<div class="hm"><div class="hm-icon">&#128564;</div><div class="hm-val">'+sleepScore+'</div><div class="hm-lbl">Sleep Score</div><div class="hm-sub">'+hrs+'</div></div>';
     } else { html += '<div class="hm"><div class="hm-icon">&#128564;</div><div class="hm-val">—</div><div class="hm-lbl">Sleep</div></div>'; }
     if (h.steps) {
       html += '<div class="hm"><div class="hm-icon">&#128694;</div><div class="hm-val">'+Number(h.steps.count).toLocaleString()+'</div><div class="hm-lbl">Steps</div><div class="hm-sub">'+h.steps.distance_km+' km</div></div>';
@@ -1480,9 +1481,9 @@ function renderHealthChart(dates, cont, metric) {
   var points = [];
   for (var i = 0; i < sorted.length; i++) {
     var d = sorted[i]; var h = S.health[d]; var val = null;
-    if (metric === 'sleep' && h.sleep) val = parseFloat(h.sleep.score)||null;
-    if (metric === 'steps' && h.steps) val = parseFloat(h.steps.count)||null;
-    if (metric === 'hr' && h.hr) val = h.hr.avg||null;
+    if (metric === 'sleep' && h.sleep && h.sleep.score !== '') { var v = parseFloat(h.sleep.score); if (!isNaN(v)) val = v; }
+    if (metric === 'steps' && h.steps && h.steps.count) { var v = parseFloat(h.steps.count); if (!isNaN(v)) val = v; }
+    if (metric === 'hr' && h.hr && h.hr.avg) { var v = parseFloat(h.hr.avg); if (!isNaN(v)) val = v; }
     if (val !== null) points.push({date:d, val:val});
   }
   var titles = {sleep:'Sleep Score', steps:'Daily Steps', hr:'Avg Heart Rate (bpm)'};
