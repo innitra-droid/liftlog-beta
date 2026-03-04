@@ -1612,31 +1612,34 @@ function parseHealthCSV(filename, text) {
   var headers = lines[1].split(',').map(function(h){ return h.trim().replace(/\uFEFF/g,''); });
   function getCol(row, key) { var idx=headers.indexOf(key); return idx>=0?(row[idx]||'').trim():''; }
 
-  if (filename.indexOf('shealth_sleep_2')!==-1 && filename.indexOf('stage')===-1 && filename.indexOf('raw')===-1) {
+  var isSleep = headers.indexOf('com.samsung.health.sleep.start_time') !== -1
+    && headers.indexOf('sleep_score') !== -1
+    && headers.indexOf('sleep_stage') === -1;
+  var isSteps = headers.indexOf('step_count') !== -1 && headers.indexOf('day_time') !== -1;
+  var isHR    = headers.indexOf('com.samsung.health.heart_rate.heart_rate') !== -1;
+
+  if (isSleep) {
     for (var i=2;i<lines.length;i++) {
-      var line = lines[i]; if (!line.trim()) continue;
-      // Use regex split to handle potential empty fields correctly
-      var row = line.split(',');
+      var line=lines[i]; if (!line.trim()) continue;
+      var row=line.split(',');
       try {
-        // Find column indices fresh each row to handle length mismatches
-        var startIdx = headers.indexOf('com.samsung.health.sleep.start_time');
-        var endIdx = headers.indexOf('com.samsung.health.sleep.end_time');
-        var scoreIdx = headers.indexOf('sleep_score');
-        var durIdx = headers.indexOf('sleep_duration');
-        var effIdx = headers.indexOf('efficiency');
-        var start = startIdx>=0 ? (row[startIdx]||'').trim() : '';
-        if (!start || start.length < 10) continue;
-        var date = start.substring(0,10);
-        var duration_min = durIdx>=0 ? (parseInt(row[durIdx])||0) : 0;
-        var score = scoreIdx>=0 ? (row[scoreIdx]||'').trim() : '';
-        var efficiency = effIdx>=0 ? (row[effIdx]||'').trim() : '';
+        var startIdx=headers.indexOf('com.samsung.health.sleep.start_time');
+        var scoreIdx=headers.indexOf('sleep_score');
+        var durIdx=headers.indexOf('sleep_duration');
+        var effIdx=headers.indexOf('efficiency');
+        var start=startIdx>=0?(row[startIdx]||'').trim():'';
+        if (!start||start.length<10) continue;
+        var date=start.substring(0,10);
+        var duration_min=durIdx>=0&&row[durIdx]?(parseInt(row[durIdx])||0):0;
+        var score=scoreIdx>=0?(row[scoreIdx]||'').trim():'';
+        var efficiency=effIdx>=0?(row[effIdx]||'').trim():'';
         if (!S.health[date]) S.health[date]={};
         S.health[date].sleep={score:score,efficiency:efficiency,duration_min:duration_min};
       } catch(e){}
     }
   }
 
-  if (filename.indexOf('pedometer_day_summary')!==-1) {
+  if (isSteps) {
     for (var i=2;i<lines.length;i++) {
       var row=lines[i].split(','); if (row.length<5) continue;
       try {
@@ -1653,7 +1656,7 @@ function parseHealthCSV(filename, text) {
     }
   }
 
-  if (filename.indexOf('heart_rate')!==-1) {
+  if (isHR) {
     var daily={};
     for (var i=2;i<lines.length;i++) {
       var row=lines[i].split(','); if (row.length<5) continue;
