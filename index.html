@@ -144,15 +144,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .tbl-export-btn{margin:0 16px 12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
 .tbl-export-btn:hover{border-color:var(--accent);color:var(--accent)}
 
+.prog-view-tab{padding:8px 20px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.prog-view-tab.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.prog-ex-btn{flex-shrink:0;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.prog-ex-btn.active{background:var(--card2);color:var(--text);border-color:var(--sub)}
+
 /* PROGRESS */
 #progressView{padding-bottom:80px}
 .prog-inner{padding:0 16px}
-.prog-head{padding:20px 0 12px}
-.prog-head h2{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;color:var(--accent)}
-.prog-head p{font-size:.75rem;color:var(--sub)}
-.prog-lift-tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.prog-tab{padding:6px 16px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-.prog-tab.active{background:var(--accent);color:#000;border-color:var(--accent)}
 .chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
 .chart-title{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
 .chart-area{width:100%;height:120px}
@@ -161,6 +160,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .prog-entry{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
 .pe-wk{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
 .pe-val{font-family:'Bebas Neue',sans-serif;font-size:1.3rem}
+.pe-reps{font-size:.72rem;color:var(--sub);margin-top:1px}
 .delta{font-size:.75rem;font-weight:600}
 .delta.up{color:var(--green)}.delta.dn{color:var(--red)}.delta.eq{color:var(--muted)}
 
@@ -268,13 +268,26 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="hdr-btns"><button class="hdr-btn" onclick="openView('mainView')">&#10005; Close</button></div>
   </div>
   <div class="prog-inner">
-    <div class="prog-head"><h2>Weight Logged</h2><p>Top set per week for main lifts</p></div>
-    <div class="prog-lift-tabs" id="progTabs"></div>
-    <div class="chart-card">
-      <div class="chart-title">Top Weight (kg) Per Week</div>
-      <div class="chart-area" id="miniChart"></div>
+    <div style="display:flex;gap:8px;margin:14px 0 16px">
+      <button class="prog-view-tab active" id="pvtLog" onclick="setProgView('log')">&#128196; Log</button>
+      <button class="prog-view-tab" id="pvtGraph" onclick="setProgView('graph')">&#128200; Graphs</button>
     </div>
-    <div class="prog-log" id="progLog"></div>
+    <!-- LOG TAB -->
+    <div id="progLogTab">
+      <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px">Select Exercise</div>
+      <div id="progExPicker" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
+      <div id="progLogContent"></div>
+    </div>
+    <!-- GRAPH TAB -->
+    <div id="progGraphTab" style="display:none">
+      <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px">Select Exercise</div>
+      <div id="progGraphPicker" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
+      <div class="chart-card">
+        <div class="chart-title" id="graphTitle">Select an exercise</div>
+        <div class="chart-area" id="mainChart"></div>
+      </div>
+      <div id="progGraphLog" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
+    </div>
   </div>
 </div>
 
@@ -1070,76 +1083,200 @@ function exportCSV() {
 }
 
 // ── PROGRESS ──
-function renderProgress() {
-  var lifts = ['Squat','Deadlift','Bench Press'];
-  var html = '';
-  for (var i = 0; i < lifts.length; i++) {
-    html += '<button class="prog-tab' + (S.progLift === lifts[i] ? ' active' : '') + '" onclick="setProgLift(\'' + lifts[i] + '\')">' + lifts[i] + '</button>';
+var progView = 'log';
+var progExId = null; // selected exercise id or 'cardio_speed' etc
+
+function setProgView(v) {
+  progView = v;
+  document.getElementById('progLogTab').style.display = v === 'log' ? 'block' : 'none';
+  document.getElementById('progGraphTab').style.display = v === 'graph' ? 'block' : 'none';
+  document.getElementById('pvtLog').classList.toggle('active', v === 'log');
+  document.getElementById('pvtGraph').classList.toggle('active', v === 'graph');
+  renderProgress();
+}
+
+// Build flat list of all trackable items
+function getAllExercises() {
+  var items = [];
+  for (var di = 0; di < S.program.length; di++) {
+    var dayData = S.program[di];
+    if (dayData.rest && dayData.restLabel !== 'Cardio') continue;
+    for (var ei = 0; ei < dayData.exercises.length; ei++) {
+      var ex = dayData.exercises[ei];
+      if (ex.name) items.push({id: ex.id, label: ex.name + (ex.v ? ' ('+ex.v+')' : ''), type:'exercise', day: dayData.day});
+    }
+    if (dayData.restLabel === 'Cardio') {
+      items.push({id:'cardio_speed', label:'Cardio — Speed', type:'cardio', field:'speed', day: dayData.day});
+      items.push({id:'cardio_duration', label:'Cardio — Duration', type:'cardio', field:'duration', day: dayData.day});
+    }
   }
-  document.getElementById('progTabs').innerHTML = html;
+  return items;
+}
+
+// Get top set per week for an exercise: max weight, then reps at that weight
+function getExerciseData(exId, dayNum) {
   var data = [];
   for (var w = 1; w <= 12; w++) {
-    var top = null;
-    if (S.logs[w]) {
-      var days = Object.keys(S.logs[w]);
-      for (var di = 0; di < days.length; di++) {
-        var day = days[di];
-        var dayData = null;
-        for (var pi = 0; pi < S.program.length; pi++) { if (S.program[pi].day == day) { dayData = S.program[pi]; break; } }
-        if (!dayData) continue;
-        var exIds = Object.keys(S.logs[w][day]);
-        for (var ei = 0; ei < exIds.length; ei++) {
-          var exId = exIds[ei];
-          var ex = null;
-          for (var xi = 0; xi < dayData.exercises.length; xi++) { if (dayData.exercises[xi].id === exId) { ex = dayData.exercises[xi]; break; } }
-          if (!ex) continue;
-          if (ex.name.toLowerCase().indexOf(S.progLift.split(' ')[0].toLowerCase()) === -1) continue;
-          var sets = S.logs[w][day][exId].sets;
-          for (var si = 0; si < sets.length; si++) {
-            if (sets[si].w && sets[si].done) { var v = parseFloat(sets[si].w); if (!top || v > top) top = v; }
-          }
+    var log = S.logs[w] && S.logs[w][dayNum] && S.logs[w][dayNum][exId];
+    var topW = null, topR = null;
+    if (log && log.sets.length) {
+      for (var si = 0; si < log.sets.length; si++) {
+        var s = log.sets[si];
+        if (!s.w) continue;
+        var wv = parseFloat(s.w);
+        var rv = parseFloat(s.r) || 0;
+        if (topW === null || wv > topW || (wv === topW && rv > topR)) {
+          topW = wv; topR = rv;
         }
       }
     }
-    data.push({week:w, top:top});
+    data.push({week: w, w: topW, r: topR});
   }
+  return data;
+}
+
+// Get cardio field data per week
+function getCardioData(field, dayNum) {
+  var data = [];
+  for (var w = 1; w <= 12; w++) {
+    var clog = S.logs[w] && S.logs[w][dayNum] && S.logs[w][dayNum]['cardio'];
+    var val = clog && clog[field] ? parseFloat(clog[field]) : null;
+    if (isNaN(val)) val = null;
+    data.push({week: w, val: val});
+  }
+  return data;
+}
+
+function renderProgress() {
+  var items = getAllExercises();
+  if (!progExId && items.length) progExId = items[0].id;
+
+  // Build pickers for both tabs
+  var pickerHtml = '';
+  for (var i = 0; i < items.length; i++) {
+    pickerHtml += '<button class="prog-ex-btn' + (progExId === items[i].id ? ' active' : '') + '" onclick="selectProgEx(\'' + items[i].id + '\')">' + items[i].label + '</button>';
+  }
+  document.getElementById('progExPicker').innerHTML = pickerHtml;
+  document.getElementById('progGraphPicker').innerHTML = pickerHtml;
+
+  if (progView === 'log') renderProgLog(items);
+  else renderProgGraph(items);
+}
+
+function selectProgEx(id) {
+  progExId = id;
+  renderProgress();
+}
+
+function renderProgLog(items) {
+  var item = null;
+  for (var i = 0; i < items.length; i++) { if (items[i].id === progExId) { item = items[i]; break; } }
+  if (!item) { document.getElementById('progLogContent').innerHTML = ''; return; }
+
+  var html = '';
+  if (item.type === 'exercise') {
+    var data = getExerciseData(item.id, item.day);
+    var filled = [];
+    for (var i = 0; i < data.length; i++) { if (data[i].w !== null) filled.push(data[i]); }
+    if (!filled.length) {
+      html = '<div style="color:var(--muted);font-size:.82rem;padding:20px 0">No data logged yet</div>';
+    } else {
+      for (var i = filled.length-1; i >= 0; i--) {
+        var prev = i < filled.length-1 ? filled[i+1] : null;
+        var delta = prev && prev.w !== null ? Math.round((filled[i].w - prev.w) * 10) / 10 : null;
+        var dh = delta !== null ? '<span class="delta ' + (delta > 0 ? 'up' : delta < 0 ? 'dn' : 'eq') + '">' + (delta > 0 ? '+' : '') + delta + 'kg</span>' : '';
+        html += '<div class="prog-entry">'
+          + '<div><div class="pe-wk">Week ' + filled[i].week + '</div>'
+          + '<div class="pe-val">' + filled[i].w + ' kg</div>'
+          + '<div class="pe-reps">' + (filled[i].r ? filled[i].r + ' rep' + (filled[i].r != 1 ? 's' : '') : '') + '</div></div>'
+          + dh + '</div>';
+      }
+    }
+  } else {
+    // Cardio
+    var data = getCardioData(item.field, item.day);
+    var filled = [];
+    for (var i = 0; i < data.length; i++) { if (data[i].val !== null) filled.push(data[i]); }
+    if (!filled.length) {
+      html = '<div style="color:var(--muted);font-size:.82rem;padding:20px 0">No cardio data logged yet</div>';
+    } else {
+      for (var i = filled.length-1; i >= 0; i--) {
+        var prev = i < filled.length-1 ? filled[i+1] : null;
+        var delta = prev ? Math.round((filled[i].val - prev.val) * 10) / 10 : null;
+        var unit = item.field === 'duration' ? ' min' : '';
+        var dh = delta !== null ? '<span class="delta ' + (delta > 0 ? 'up' : delta < 0 ? 'dn' : 'eq') + '">' + (delta > 0 ? '+' : '') + delta + unit + '</span>' : '';
+        html += '<div class="prog-entry">'
+          + '<div><div class="pe-wk">Week ' + filled[i].week + '</div>'
+          + '<div class="pe-val">' + filled[i].val + unit + '</div></div>'
+          + dh + '</div>';
+      }
+    }
+  }
+  document.getElementById('progLogContent').innerHTML = html;
+}
+
+function renderProgGraph(items) {
+  var item = null;
+  for (var i = 0; i < items.length; i++) { if (items[i].id === progExId) { item = items[i]; break; } }
+  if (!item) return;
+
+  document.getElementById('graphTitle').textContent = item.label;
+
   var filled = [];
-  for (var i = 0; i < data.length; i++) { if (data[i].top !== null) filled.push(data[i]); }
-  var chartEl = document.getElementById('miniChart');
+  if (item.type === 'exercise') {
+    var data = getExerciseData(item.id, item.day);
+    for (var i = 0; i < data.length; i++) { if (data[i].w !== null) filled.push({week: data[i].week, val: data[i].w, r: data[i].r}); }
+  } else {
+    var data = getCardioData(item.field, item.day);
+    for (var i = 0; i < data.length; i++) { if (data[i].val !== null) filled.push({week: data[i].week, val: data[i].val, r: null}); }
+  }
+
+  var chartEl = document.getElementById('mainChart');
   if (filled.length < 2) {
-    chartEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:.8rem">Log sets to see chart</div>';
+    chartEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:.8rem">Need at least 2 weeks of data</div>';
   } else {
     var mn = Infinity, mx = -Infinity;
-    for (var i = 0; i < filled.length; i++) { if (filled[i].top < mn) mn = filled[i].top; if (filled[i].top > mx) mx = filled[i].top; }
-    mn = mn * 0.95; mx = mx * 1.05;
+    for (var i = 0; i < filled.length; i++) { if (filled[i].val < mn) mn = filled[i].val; if (filled[i].val > mx) mx = filled[i].val; }
+    var range = mx - mn;
+    if (range === 0) { mn = mn * 0.9; mx = mx * 1.1; range = mx - mn; }
+    else { mn = mn - range * 0.1; mx = mx + range * 0.1; }
     var W = 300, H = 100, pts = '', area1 = '', area2 = '';
     for (var i = 0; i < filled.length; i++) {
       var x = (i / (filled.length-1)) * W;
-      var y = H - ((filled[i].top - mn) / (mx - mn)) * H;
+      var y = H - ((filled[i].val - mn) / (mx - mn)) * H;
       if (i > 0) { pts += ' '; area1 += ' '; }
       pts += x + ',' + y; area1 += x + ',' + y;
     }
     for (var i = filled.length-1; i >= 0; i--) { area2 += ' ' + ((i/(filled.length-1))*W) + ',' + H; }
-    var circles = '';
+    var labels = '', circles = '';
     for (var i = 0; i < filled.length; i++) {
-      var x = (i/(filled.length-1))*W, y = H-((filled[i].top-mn)/(mx-mn))*H;
-      circles += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="var(--accent)"/>';
+      var x = (i/(filled.length-1))*W, y = H-((filled[i].val-mn)/(mx-mn))*H;
+      circles += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="var(--accent)"/>';
+      labels += '<text x="' + x + '" y="' + (y - 7) + '" text-anchor="middle" font-size="7" fill="var(--accent)" font-family="DM Sans,sans-serif">' + filled[i].val + '</text>';
+      labels += '<text x="' + x + '" y="' + (H + 10) + '" text-anchor="middle" font-size="6" fill="var(--muted)" font-family="DM Sans,sans-serif">W' + filled[i].week + '</text>';
     }
-    chartEl.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
-      + '<defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'
-      + '<polygon points="' + area1 + area2 + '" fill="url(#cg)"/>'
-      + '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
-      + circles + '</svg>';
+    chartEl.innerHTML = '<svg viewBox="0 -10 ' + W + ' ' + (H+16) + '" preserveAspectRatio="none">'
+      + '<defs><linearGradient id="cg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".25"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'
+      + '<polygon points="' + area1 + area2 + '" fill="url(#cg2)"/>'
+      + '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+      + circles + labels + '</svg>';
   }
-  var logHtml = filled.length === 0 ? '<div style="color:var(--muted);font-size:.82rem;padding:20px 0">No data yet</div>' : '';
+
+  // Log below graph
+  var logHtml = '';
   for (var i = filled.length-1; i >= 0; i--) {
     var prev = i < filled.length-1 ? filled[i+1] : null;
-    var delta = prev ? Math.round((filled[i].top - prev.top) * 10) / 10 : null;
-    var dh = delta !== null ? '<span class="delta ' + (delta > 0 ? 'up' : delta < 0 ? 'dn' : 'eq') + '">' + (delta > 0 ? '+' : '') + delta + 'kg</span>' : '';
-    logHtml += '<div class="prog-entry"><div><div class="pe-wk">Week ' + filled[i].week + '</div><div class="pe-val">' + filled[i].top + ' kg</div></div>' + dh + '</div>';
+    var delta = prev ? Math.round((filled[i].val - prev.val) * 10) / 10 : null;
+    var dh = delta !== null ? '<span class="delta ' + (delta > 0 ? 'up' : delta < 0 ? 'dn' : 'eq') + '">' + (delta > 0 ? '+' : '') + delta + (item.type === 'cardio' && item.field === 'duration' ? ' min' : item.type === 'exercise' ? 'kg' : '') + '</span>' : '';
+    logHtml += '<div class="prog-entry">'
+      + '<div><div class="pe-wk">Week ' + filled[i].week + '</div>'
+      + '<div class="pe-val">' + filled[i].val + (item.type === 'exercise' ? ' kg' : item.field === 'duration' ? ' min' : '') + '</div>'
+      + (filled[i].r ? '<div class="pe-reps">' + filled[i].r + ' rep' + (filled[i].r != 1 ? 's' : '') + '</div>' : '')
+      + '</div>' + dh + '</div>';
   }
-  document.getElementById('progLog').innerHTML = logHtml;
+  document.getElementById('progGraphLog').innerHTML = logHtml;
 }
+
 function setProgLift(l) { S.progLift = l; renderProgress(); }
 
 // ── EDIT ──
