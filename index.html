@@ -338,11 +338,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <input type="file" id="healthImport" accept=".csv" multiple style="display:none" onchange="importHealthCSVs(event)">
   <div style="padding:10px 16px 4px">
     <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px">View</div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
       <button class="prog-view-tab active" id="hvtCards" onclick="setHealthView('cards')">&#128197; Daily</button>
       <button class="prog-view-tab" id="hvtSleep" onclick="setHealthView('sleep')">&#128564; Sleep</button>
       <button class="prog-view-tab" id="hvtSteps" onclick="setHealthView('steps')">&#128694; Steps</button>
       <button class="prog-view-tab" id="hvtHR" onclick="setHealthView('hr')">&#10084; Heart Rate</button>
+      <button class="prog-view-tab" onclick="debugHealth()" style="border-color:var(--red);color:var(--red)">&#128027; Debug</button>
     </div>
   </div>
   <div id="healthContent" style="padding:0 16px 100px"></div>
@@ -1430,6 +1431,32 @@ function autoNavigate() {
 
 // ── HEALTH ──
 var healthView = 'cards';
+
+function debugHealth() {
+  var dates = Object.keys(S.health);
+  var msg = 'S.health dates: ' + dates.length + '\n\n';
+  for (var i = 0; i < dates.length; i++) {
+    var d = dates[i];
+    var h = S.health[d];
+    msg += d + ':\n';
+    if (h.sleep) msg += '  sleep: score=' + h.sleep.score + ' dur=' + h.sleep.duration_min + '\n';
+    if (h.steps) msg += '  steps: ' + h.steps.count + '\n';
+    if (h.hr) msg += '  hr: avg=' + h.hr.avg + '\n';
+  }
+  msg += '\nhealthView: ' + healthView;
+  // Also show what points would be built for sleep
+  var sorted = dates.slice().sort();
+  var sleepPts = [];
+  for (var i = 0; i < sorted.length; i++) {
+    var h = S.health[sorted[i]];
+    if (h.sleep && h.sleep.score !== '') {
+      var v = parseFloat(h.sleep.score);
+      if (!isNaN(v)) sleepPts.push(sorted[i] + ':' + v);
+    }
+  }
+  msg += '\nSleep points: ' + sleepPts.join(', ');
+  alert(msg);
+}
 
 function setHealthView(v) {
   healthView = v;
