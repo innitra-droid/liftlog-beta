@@ -1,25 +1,13 @@
 {
-  "name": "Lift Log",
-  "short_name": "Lift Log",
-  "description": "Powerlifting training tracker",
-  "start_url": "https://innitra-droid.github.io/liftlog/",
-  "scope": "https://innitra-droid.github.io/liftlog/",
+  "name": "Lift Log Beta",
+  "short_name": "Lift Beta",
+  "start_url": "https://innitra-droid.github.io/liftlog-beta/",
+  "scope": "https://innitra-droid.github.io/liftlog-beta/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
-  "orientation": "portrait",
   "icons": [
-    {
-      "src": "https://innitra-droid.github.io/liftlog/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://innitra-droid.github.io/liftlog/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "https://innitra-droid.github.io/liftlog-beta/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://innitra-droid.github.io/liftlog-beta/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
