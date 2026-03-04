@@ -1546,17 +1546,24 @@ function parseHealthCSV(filename, text) {
 
   if (filename.indexOf('shealth_sleep_2')!==-1 && filename.indexOf('stage')===-1 && filename.indexOf('raw')===-1) {
     for (var i=2;i<lines.length;i++) {
-      var row=lines[i].split(','); if (row.length<5) continue;
+      var line = lines[i]; if (!line.trim()) continue;
+      // Use regex split to handle potential empty fields correctly
+      var row = line.split(',');
       try {
-        var start=getCol(row,'com.samsung.health.sleep.start_time');
-        var end=getCol(row,'com.samsung.health.sleep.end_time');
-        if (!start) continue;
-        var date=start.substring(0,10);
-        var startMs=new Date(start).getTime(), endMs=new Date(end).getTime();
-        var duration_min=isNaN(startMs)||isNaN(endMs)?0:Math.round((endMs-startMs)/60000);
-        var score=getCol(row,'sleep_score'), efficiency=getCol(row,'efficiency');
+        // Find column indices fresh each row to handle length mismatches
+        var startIdx = headers.indexOf('com.samsung.health.sleep.start_time');
+        var endIdx = headers.indexOf('com.samsung.health.sleep.end_time');
+        var scoreIdx = headers.indexOf('sleep_score');
+        var durIdx = headers.indexOf('sleep_duration');
+        var effIdx = headers.indexOf('efficiency');
+        var start = startIdx>=0 ? (row[startIdx]||'').trim() : '';
+        if (!start || start.length < 10) continue;
+        var date = start.substring(0,10);
+        var duration_min = durIdx>=0 ? (parseInt(row[durIdx])||0) : 0;
+        var score = scoreIdx>=0 ? (row[scoreIdx]||'').trim() : '';
+        var efficiency = effIdx>=0 ? (row[effIdx]||'').trim() : '';
         if (!S.health[date]) S.health[date]={};
-        S.health[date].sleep={score:score||'',efficiency:efficiency||'',duration_min:duration_min};
+        S.health[date].sleep={score:score,efficiency:efficiency,duration_min:duration_min};
       } catch(e){}
     }
   }
