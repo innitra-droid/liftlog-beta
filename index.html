@@ -526,7 +526,7 @@ function load() {
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  S.program = parsed.program || S.program;
+  if (parsed.program && parsed.program.length > 0) S.program = parsed.program;
   S.logs = parsed.logs || {};
   S.doneDays = parsed.doneDays || {};
   S.week = parsed.week || 1;
