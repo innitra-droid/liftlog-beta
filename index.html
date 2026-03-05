@@ -1054,6 +1054,23 @@ function exportCSV() {
   for (var w = 1; w <= 12; w++) {
     for (var di = 0; di < S.program.length; di++) {
       var dd = S.program[di];
+      // Cardio day — export cardio session + any exercises
+      if (dd.rest && dd.restLabel === 'Cardio') {
+        var clog = S.logs[w] && S.logs[w][dd.day] && S.logs[w][dd.day]['cardio'];
+        if (clog && (clog.mode || clog.speed || clog.duration)) {
+          rows.push([w, dd.name, 'Cardio', 'cardio', '', clog.mode||'', clog.speed||'', clog.duration ? clog.duration+'min' : '']);
+        }
+        for (var ei = 0; ei < dd.exercises.length; ei++) {
+          var ex = dd.exercises[ei];
+          var log = S.logs[w] && S.logs[w][dd.day] && S.logs[w][dd.day][ex.id];
+          if (!log || !log.sets.length) continue;
+          for (var si = 0; si < log.sets.length; si++) {
+            var s = log.sets[si];
+            rows.push([w, dd.name, ex.name, ex.type, si+1, s.w||'', s.r||'', s.done?'Yes':'No']);
+          }
+        }
+        continue;
+      }
       if (dd.rest) continue;
       for (var ei = 0; ei < dd.exercises.length; ei++) {
         var ex = dd.exercises[ei];
@@ -1262,6 +1279,15 @@ function updEx(dayNum, exId, field, val) {
   }
 }
 function delEx(dayNum, exId) {
+  var exName = '';
+  for (var i = 0; i < S.program.length; i++) {
+    if (S.program[i].day === dayNum) {
+      for (var j = 0; j < S.program[i].exercises.length; j++) {
+        if (S.program[i].exercises[j].id === exId) { exName = S.program[i].exercises[j].name; break; }
+      }
+    }
+  }
+  if (!confirm('Delete "' + exName + '"? This cannot be undone.')) return;
   for (var i = 0; i < S.program.length; i++) {
     if (S.program[i].day === dayNum) {
       S.program[i].exercises = S.program[i].exercises.filter(function(e) { return e.id !== exId; });
