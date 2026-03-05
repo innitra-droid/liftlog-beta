@@ -37,6 +37,17 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .prog-ex-btn{flex-shrink:0;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .prog-ex-btn.active{background:var(--card2);color:var(--text);border-color:var(--sub)}
 .pe-reps{font-size:.72rem;color:var(--sub);margin-top:1px}
+.maxes-board{display:flex;flex-direction:column;gap:6px;padding-bottom:20px}
+.max-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .15s}
+.max-row:hover{border-color:var(--accent)}
+.max-row.has-data{border-color:rgba(200,255,0,.2)}
+.max-row-left{flex:1;min-width:0}
+.max-row-name{font-size:.9rem;font-weight:600;color:var(--text)}
+.max-row-day{font-size:.65rem;color:var(--muted);margin-top:1px;text-transform:uppercase;letter-spacing:.8px}
+.max-row-right{text-align:right;flex-shrink:0;margin-left:12px}
+.max-row-weight{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);line-height:1}
+.max-row-reps{font-size:.7rem;color:var(--sub);margin-top:1px}
+.max-row-empty{font-size:.8rem;color:var(--muted)}
 .tbl-export-btn{margin:0 16px 12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
 .tbl-export-btn:hover{border-color:var(--accent);color:var(--accent)}
 #healthView{padding-bottom:80px}
@@ -279,12 +290,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
   <div class="prog-inner">
     <div style="display:flex;gap:8px;margin:14px 0 16px">
-      <button class="prog-view-tab active" id="pvtLog" onclick="setProgView('log')">&#128196; Log</button>
-      <button class="prog-view-tab" id="pvtGraph" onclick="setProgView('graph')">&#128200; Graphs</button>
+      <button class="prog-view-tab active" id="pvtLog" onclick="setProgView('log')">&#127942; Maxes</button>
+      <button class="prog-view-tab" id="pvtGraph" onclick="setProgView('graph')">&#128200; Graph</button>
     </div>
     <div id="progLogTab">
-      <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px">Select Exercise</div>
-      <div id="progExPicker" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
       <div id="progLogContent"></div>
     </div>
     <div id="progGraphTab" style="display:none">
@@ -531,7 +540,12 @@ function load() {
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  if (parsed.program && parsed.program.length > 0) S.program = parsed.program;
+  // Migrate: if saved program has fewer days than default, use new default but keep logs
+  if (parsed.program && parsed.program.length >= DEFAULT_PROGRAM.length) {
+    S.program = parsed.program;
+  } else {
+    S.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
+  }
   S.logs = parsed.logs || {};
   S.doneDays = parsed.doneDays || {};
   S.week = parsed.week || 1;
@@ -1112,33 +1126,47 @@ function renderProgress() {
   for (var i = 0; i < items.length; i++) {
     pickerHtml += '<button class="prog-ex-btn'+(progExId===items[i].id?' active':'')+'" onclick="selectProgEx(\''+items[i].id+'\')">'+items[i].label+'</button>';
   }
-  document.getElementById('progExPicker').innerHTML = pickerHtml;
   document.getElementById('progGraphPicker').innerHTML = pickerHtml;
   if (progView === 'log') renderProgLog(items);
   else renderProgGraph(items);
 }
+
 function selectProgEx(id) { progExId = id; renderProgress(); }
+
 function renderProgLog(items) {
-  var item = null;
-  for (var i = 0; i < items.length; i++) { if (items[i].id===progExId) { item=items[i]; break; } }
-  if (!item) { document.getElementById('progLogContent').innerHTML=''; return; }
-  var data = getExerciseData(item.id, item.day);
-  var filled = [];
-  for (var i = 0; i < data.length; i++) { if (data[i].w!==null) filled.push(data[i]); }
-  var html = '';
-  if (!filled.length) {
-    html = '<div style="color:var(--muted);font-size:.82rem;padding:20px 0">No data logged yet</div>';
-  } else {
-    for (var i = filled.length-1; i >= 0; i--) {
-      var prev = i < filled.length-1 ? filled[i+1] : null;
-      var delta = prev ? Math.round((filled[i].w-prev.w)*10)/10 : null;
-      var dh = delta!==null ? '<span class="delta '+(delta>0?'up':delta<0?'dn':'eq')+'">'+(delta>0?'+':'')+delta+'kg</span>' : '';
-      html += '<div class="prog-entry"><div><div class="pe-wk">Week '+filled[i].week+'</div>'
-        + '<div class="pe-val">'+filled[i].w+' kg</div>'
-        + (filled[i].r ? '<div class="pe-reps">'+filled[i].r+' rep'+(filled[i].r!=1?'s':'')+'</div>' : '')
-        + '</div>'+dh+'</div>';
-    }
+  if (!items.length) {
+    document.getElementById('progLogContent').innerHTML = '<div style="color:var(--muted);font-size:.82rem;padding:20px 0">No exercises in program</div>';
+    return;
   }
+  var html = '<div class="maxes-board">';
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var data = getExerciseData(item.id, item.day);
+    // Find all-time best across all weeks
+    var bestW = null, bestR = null;
+    for (var j = 0; j < data.length; j++) {
+      if (data[j].w !== null) {
+        if (bestW === null || data[j].w > bestW || (data[j].w === bestW && data[j].r > bestR)) {
+          bestW = data[j].w; bestR = data[j].r;
+        }
+      }
+    }
+    var dayName = 'Day ' + item.day;
+    html += '<div class="max-row'+(bestW!==null?' has-data':'')+'" onclick="selectProgEx(\''+item.id+'\');setProgView(\'graph\')">';
+    html += '<div class="max-row-left">';
+    html += '<div class="max-row-name">'+item.label+'</div>';
+    html += '<div class="max-row-day">'+dayName+' &middot; '+item.type+'</div>';
+    html += '</div>';
+    html += '<div class="max-row-right">';
+    if (bestW !== null) {
+      html += '<div class="max-row-weight">'+bestW+' <span style="font-size:.9rem">kg</span></div>';
+      html += '<div class="max-row-reps">'+(bestR ? bestR+' rep'+(bestR!=1?'s':'') : '')+'</div>';
+    } else {
+      html += '<div class="max-row-empty">No data</div>';
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
   document.getElementById('progLogContent').innerHTML = html;
 }
 function renderProgGraph(items) {
