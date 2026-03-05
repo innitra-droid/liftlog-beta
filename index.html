@@ -516,17 +516,17 @@ function load() {
     } else { loadFromLocal(); }
     setSyncStatus('saved');
     setTimeout(function(){ setSyncStatus('idle'); }, 1500);
-    renderAll();
+    autoNavigate();
   }).catch(function() {
     setSyncStatus('error');
     loadFromLocal();
-    renderAll();
+    autoNavigate();
   });
 }
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  S.program = parsed.program || S.program;
+  if (parsed.program && parsed.program.length > 0) S.program = parsed.program;
   S.logs = parsed.logs || {};
   S.doneDays = parsed.doneDays || {};
   S.week = parsed.week || 1;
@@ -965,7 +965,8 @@ function toggleDayDone() {
   if (!wasDone) {
     fireConfetti();
     toast('Day complete! Great work &#128170;', 2500);
-    renderDayTabs(); renderDayContent();
+    // Auto-advance to next day after a moment
+    setTimeout(function() { autoNavigate(); }, 1200);
   } else {
     renderDayTabs(); renderDayContent();
   }
@@ -1406,7 +1407,24 @@ function renderAll() {
   renderMaxes(); renderWeekBtns(); renderDayTabs(); renderDayContent(); updateSwipeHints();
 }
 
-
+function autoNavigate() {
+  if (!S.program || S.program.length === 0) { renderAll(); return; }
+  var doneKeys = Object.keys(S.doneDays);
+  var latestWeek = 1;
+  for (var i = 0; i < doneKeys.length; i++) {
+    if (S.doneDays[doneKeys[i]]) {
+      var wk = parseInt(doneKeys[i].split('_')[0]);
+      if (wk > latestWeek) latestWeek = wk;
+    }
+  }
+  S.week = latestWeek;
+  for (var i = 0; i < S.program.length; i++) {
+    var d = S.program[i];
+    if (!S.doneDays[S.week + '_' + d.day]) { S.day = d.day; renderAll(); return; }
+  }
+  if (S.week < 12 && S.program.length > 0) { S.week++; S.day = S.program[0].day; }
+  renderAll();
+}
 
 // ── HEALTH ──
 var healthView = 'cards';
