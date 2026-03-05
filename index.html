@@ -504,10 +504,14 @@ function pushToSupabase() {
 }
 
 function load() {
-  document.getElementById('dayContent').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);font-size:.85rem">Loading...</div>';
+  // Render immediately from local/defaults — never block the UI on network
+  loadFromLocal();
+  autoNavigate();
+
+  // Background-sync with Supabase
   setSyncStatus('saving');
   var ctrl = new AbortController();
-  var timer = setTimeout(function() { ctrl.abort(); }, 5000);
+  var timer = setTimeout(function() { ctrl.abort(); }, 6000);
   fetch(SUPA_URL + '/rest/v1/logs?id=eq.main&select=data', {
     headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY},
     signal: ctrl.signal
@@ -516,20 +520,19 @@ function load() {
     if (rows && rows.length > 0 && rows[0].data && Object.keys(rows[0].data).length > 0) {
       applyData(rows[0].data);
       try { localStorage.setItem('pl2025', JSON.stringify(S)); } catch(e) {}
-    } else { loadFromLocal(); }
+      renderAll();
+    }
     setSyncStatus('saved');
     setTimeout(function(){ setSyncStatus('idle'); }, 1500);
-    autoNavigate();
   }).catch(function() {
+    clearTimeout(timer);
     setSyncStatus('error');
-    loadFromLocal();
-    autoNavigate();
   });
 }
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  // Guard against empty/corrupt program — [] is truthy in JS so must check length
+  // Guard: [] is truthy in JS — never let empty array wipe the program
   if (parsed.program && parsed.program.length > 0) S.program = parsed.program;
   S.logs = parsed.logs || {};
   S.doneDays = parsed.doneDays || {};
