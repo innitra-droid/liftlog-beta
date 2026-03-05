@@ -379,45 +379,42 @@ var DEFAULT_PROGRAM = [
     {id:'d1e4',name:'Bench Backoff',v:'',type:'backoff'},
     {id:'d1e5',name:'Leg Press',v:'Squat Assistance',type:'accessory'},
     {id:'d1e6',name:'Quad Extensions',v:'',type:'accessory'},
-    {id:'d1e7',name:'Decline Flies',v:'Pec Accessory',type:'accessory'},
-    {id:'d1e8',name:'Triceps 1',v:'Cable Pushdown',type:'accessory'},
-    {id:'d1e9',name:'Triceps 2',v:'OH Extension',type:'accessory'},
+    {id:'d1e7',name:'Decline Flies',v:'',type:'accessory'},
+    {id:'d1e8',name:'Cable Pushdown',v:'',type:'accessory'},
+    {id:'d1e9',name:'Overhead Extension',v:'',type:'accessory'},
     {id:'d1e10',name:'Chins',v:'Wide Grip',type:'accessory'}
   ]},
   { day:2, name:'Day 2', rest:true, restLabel:'Cardio', restEmoji:'&#128692;', exercises:[] },
   { day:3, name:'Day 3', rest:false, exercises:[
-    {id:'d3e1',name:'Deadlift',v:'Competition',type:'main'},
-    {id:'d3e2',name:'Deadlift Backoff',v:'',type:'backoff'},
-    {id:'d3e3',name:'Shrugs',v:'',type:'accessory'},
-    {id:'d3e4',name:'Hypers',v:'',type:'accessory'},
-    {id:'d3e5',name:'Jeffersons',v:'BW',type:'accessory'},
-    {id:'d3e6',name:'Wide Grip Chins',v:'',type:'accessory'},
-    {id:'d3e7',name:'Biceps 1',v:'',type:'accessory'},
-    {id:'d3e8',name:'Biceps 2',v:'',type:'accessory'},
-    {id:'d3e9',name:'Abs',v:'',type:'accessory'}
+    {id:'d3e1',name:'Bench Press',v:'Competition',type:'main'},
+    {id:'d3e2',name:'Bench Backoff',v:'',type:'backoff'},
+    {id:'d3e3',name:'Romanian Deadlift',v:'',type:'straight sets'},
+    {id:'d3e4',name:'Nordics',v:'',type:'accessory'},
+    {id:'d3e5',name:'BOR',v:'Barbell Row',type:'accessory'},
+    {id:'d3e6',name:'Pelican Curl',v:'',type:'accessory'},
+    {id:'d3e7',name:'Lying Cable Curl',v:'',type:'accessory'}
   ]},
   { day:4, name:'Day 4', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] },
   { day:5, name:'Day 5', rest:false, exercises:[
-    {id:'d5e1',name:'Bench Press',v:'Competition',type:'main'},
-    {id:'d5e2',name:'Bench Backoff',v:'',type:'backoff'},
-    {id:'d5e3',name:'Squat',v:'Alternative',type:'main'},
-    {id:'d5e4',name:'Triceps 1',v:'',type:'accessory'},
-    {id:'d5e5',name:'Triceps 2',v:'',type:'accessory'},
-    {id:'d5e6',name:'Pec Accessory',v:'',type:'accessory'},
-    {id:'d5e7',name:'Biceps 1',v:'',type:'accessory'},
-    {id:'d5e8',name:'Biceps 2',v:'',type:'accessory'}
+    {id:'d5e1',name:'Squat',v:'Alternative',type:'main'},
+    {id:'d5e2',name:'Bench',v:'Light',type:'main'},
+    {id:'d5e3',name:'Wide Grip Chins',v:'',type:'accessory'},
+    {id:'d5e4',name:'Pec Accessory',v:'',type:'accessory'},
+    {id:'d5e5',name:'Rolling Tricep Extension',v:'',type:'accessory'},
+    {id:'d5e6',name:'Lateral Raises',v:'',type:'accessory'},
+    {id:'d5e7',name:'Abs',v:'',type:'accessory'}
   ]},
   { day:6, name:'Day 6', rest:false, exercises:[
-    {id:'d6e1',name:'Romanian Deadlift',v:'',type:'main'},
-    {id:'d6e2',name:'Nordics',v:'',type:'accessory'},
-    {id:'d6e3',name:'Deadlift Backoff',v:'',type:'backoff'},
-    {id:'d6e4',name:'BOR',v:'Barbell Row',type:'accessory'},
-    {id:'d6e5',name:'Squat',v:'Light',type:'accessory'},
-    {id:'d6e6',name:'Bench',v:'Light',type:'accessory'},
-    {id:'d6e7',name:'Abs',v:'',type:'accessory'},
-    {id:'d6e8',name:'Biceps 1',v:'',type:'accessory'},
-    {id:'d6e9',name:'Biceps 2',v:'',type:'accessory'}
-  ]}
+    {id:'d6e1',name:'Deadlift',v:'Competition',type:'main'},
+    {id:'d6e2',name:'Deadlift Backoff',v:'',type:'backoff'},
+    {id:'d6e3',name:'Shrugs',v:'',type:'accessory'},
+    {id:'d6e4',name:'Squat',v:'Light',type:'main'},
+    {id:'d6e5',name:'Incline Curl',v:'',type:'accessory'},
+    {id:'d6e6',name:'Preacher Curl',v:'',type:'accessory'},
+    {id:'d6e7',name:'Jeffersons',v:'BW',type:'accessory'},
+    {id:'d6e8',name:'Hypers',v:'',type:'accessory'}
+  ]},
+  { day:7, name:'Day 7', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] }
 ];
 
 // State
@@ -755,7 +752,7 @@ function renderDayContent() {
         html += '<div class="section-label">Accessories</div>';
         for (var i = 0; i < dayData.exercises.length; i++) html += buildExCard(dayData.exercises[i]);
       }
-      html += '<button class="complete-btn'+(isDone?' done':'')+'" onclick="toggleDayDone()">'+(isDone?'&#10003; LOGGED':'MARK COMPLETE')+'</button>';
+      html += '<button class="complete-btn'+(isDone?' done':'')+'" onclick="toggleDayDone()">'+(isDone?'&#10003; COMPLETE':'MARK COMPLETE')+'</button>';
       cont.innerHTML = html;
       attachListeners();
       return;
@@ -766,7 +763,7 @@ function renderDayContent() {
       + '<p>Recovery is part of training</p>'
       + '</div>'
       + '<button class="complete-btn' + (isDone ? ' done' : '') + '" onclick="toggleDayDone()">'
-      + (isDone ? '&#10003; LOGGED' : 'MARK COMPLETE') + '</button>';
+      + (isDone ? '&#10003; COMPLETE' : 'MARK COMPLETE') + '</button>';
     return;
   }
 
@@ -786,7 +783,7 @@ function renderDayContent() {
     for (var i = 0; i < accEx.length; i++) html += buildExCard(accEx[i]);
   }
   html += '<button class="complete-btn' + (isDone ? ' done' : '') + '" onclick="toggleDayDone()">'
-    + (isDone ? '&#10003; DAY COMPLETE' : 'COMPLETE DAY') + '</button>';
+    + (isDone ? '&#10003; COMPLETE' : 'MARK COMPLETE') + '</button>';
   cont.innerHTML = html;
   attachListeners();
 }
@@ -800,8 +797,8 @@ function buildExCard(ex) {
   for (var i = 0; i < log.sets.length; i++) { if (log.sets[i].done) doneCount++; }
   var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + 'kg' : '';
   var summary = log.sets.length > 0 ? (doneCount + '/' + log.sets.length + ' sets logged' + lastW) : 'Tap to log sets';
-  var badgeLabel = ex.type === 'main' ? 'Main' : ex.type === 'backoff' ? 'Backoff' : 'Accessory';
-  var badgeCls = isMain ? 'badge-main' : 'badge-acc';
+  var badgeLabel = ex.type === 'main' ? 'Main' : ex.type === 'backoff' ? 'Backoff' : ex.type === 'straight sets' ? 'Str Sets' : 'Accessory';
+  var badgeCls = (ex.type === 'main' || ex.type === 'straight sets') ? 'badge-main' : 'badge-acc';
 
   var setRows = '';
   for (var i = 0; i < log.sets.length; i++) {
@@ -1076,12 +1073,17 @@ function setProgView(v) {
 }
 function getAllExercises() {
   var items = [];
+  var seen = {};
   for (var di = 0; di < S.program.length; di++) {
     var dd = S.program[di];
-    if (dd.rest) continue;
+    if (dd.rest && dd.restLabel !== 'Cardio') continue;
     for (var ei = 0; ei < dd.exercises.length; ei++) {
       var ex = dd.exercises[ei];
-      if (ex.name) items.push({id:ex.id, label:ex.name+(ex.v?' ('+ex.v+')':''), day:dd.day});
+      if (!ex.name) continue;
+      var key = ex.name + (ex.v ? ' '+ex.v : '');
+      if (seen[key]) continue;
+      seen[key] = true;
+      items.push({id:ex.id, label:ex.name+(ex.v?' ('+ex.v+')':''), day:dd.day, type:ex.type});
     }
   }
   return items;
