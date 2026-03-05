@@ -506,9 +506,12 @@ function pushToSupabase() {
 function load() {
   document.getElementById('dayContent').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);font-size:.85rem">Loading...</div>';
   setSyncStatus('saving');
+  var ctrl = new AbortController();
+  var timer = setTimeout(function() { ctrl.abort(); }, 5000);
   fetch(SUPA_URL + '/rest/v1/logs?id=eq.main&select=data', {
-    headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-  }).then(function(r) { return r.json(); })
+    headers: {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY},
+    signal: ctrl.signal
+  }).then(function(r) { clearTimeout(timer); return r.json(); })
   .then(function(rows) {
     if (rows && rows.length > 0 && rows[0].data && Object.keys(rows[0].data).length > 0) {
       applyData(rows[0].data);
@@ -526,7 +529,8 @@ function load() {
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  S.program = parsed.program || S.program;
+  // Guard against empty/corrupt program — [] is truthy in JS so must check length
+  if (parsed.program && parsed.program.length > 0) S.program = parsed.program;
   S.logs = parsed.logs || {};
   S.doneDays = parsed.doneDays || {};
   S.week = parsed.week || 1;

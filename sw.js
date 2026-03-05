@@ -1,4 +1,4 @@
-var CACHE = 'liftlog-beta-v3';
+var CACHE = 'liftlog-beta-v4';
 var ASSETS = [
   './',
   './index.html',
