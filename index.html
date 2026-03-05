@@ -540,15 +540,18 @@ function load() {
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  // Migrate: if saved program has fewer days than default, use new default but keep logs
+  var savedWeek = parsed.week || 1;
+  // Migrate to new 7-day program only from week 2 onwards
   if (parsed.program && parsed.program.length >= DEFAULT_PROGRAM.length) {
     S.program = parsed.program;
+  } else if (parsed.program && parsed.program.length > 0 && savedWeek < 2) {
+    S.program = parsed.program; // keep old program for week 1
   } else {
     S.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
   }
   S.logs = parsed.logs || {};
   S.doneDays = parsed.doneDays || {};
-  S.week = parsed.week || 1;
+  S.week = savedWeek;
   S.day = parsed.day || 1;
   S.editDay = parsed.editDay || 1;
   S.progLift = parsed.progLift || 'Squat';
