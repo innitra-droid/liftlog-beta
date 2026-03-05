@@ -737,7 +737,7 @@ function renderDayContent() {
       if (!S.logs[S.week][S.day]) S.logs[S.week][S.day] = {};
       if (!S.logs[S.week][S.day]['cardio']) S.logs[S.week][S.day]['cardio'] = {mode:'',setting:'',speed:'',duration:'',notes:''};
       var clog = S.logs[S.week][S.day]['cardio'];
-      cont.innerHTML = '<div style="padding:20px 0 8px">'
+      var html = '<div style="padding:20px 0 8px">'
         + '<div class="section-label">Cardio Session</div>'
         + '<div class="ex-card" style="margin-bottom:10px"><div style="padding:14px;display:grid;gap:10px">'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
@@ -750,14 +750,20 @@ function renderDayContent() {
         + '<div><div style="font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Duration (min)</div>'
         + '<input class="set-inp" type="text" placeholder="e.g. 30" id="cDuration" value="'+(clog.duration||'')+'" onchange="saveCardio()"></div>'
         + '</div><textarea class="notes-ta" rows="2" placeholder="Notes..." id="cNotes" onchange="saveCardio()">'+(clog.notes||'')+'</textarea>'
-        + '</div></div></div>'
-        + '<button class="complete-btn'+(isDone?' done':'')+'" onclick="toggleDayDone()">'+(isDone?'&#10003; LOGGED':'MARK COMPLETE')+'</button>';
+        + '</div></div></div>';
+      if (dayData.exercises && dayData.exercises.length > 0) {
+        html += '<div class="section-label">Accessories</div>';
+        for (var i = 0; i < dayData.exercises.length; i++) html += buildExCard(dayData.exercises[i]);
+      }
+      html += '<button class="complete-btn'+(isDone?' done':'')+'" onclick="toggleDayDone()">'+(isDone?'&#10003; LOGGED':'MARK COMPLETE')+'</button>';
+      cont.innerHTML = html;
+      attachListeners();
       return;
     }
     cont.innerHTML = '<div class="rest-screen">'
       + '<div class="ri">' + (dayData.restEmoji || '&#128564;') + '</div>'
       + '<h2>' + (dayData.restLabel || 'Rest') + ' Day</h2>'
-      + '<p>' + (dayData.restLabel === 'Cardio' ? 'Active recovery' : 'Recovery is part of training') + '</p>'
+      + '<p>Recovery is part of training</p>'
       + '</div>'
       + '<button class="complete-btn' + (isDone ? ' done' : '') + '" onclick="toggleDayDone()">'
       + (isDone ? '&#10003; LOGGED' : 'MARK COMPLETE') + '</button>';
@@ -938,8 +944,25 @@ function renderTable() {
   html += '</tr></thead><tbody>';
   for (var di = 0; di < S.program.length; di++) {
     var dayData = S.program[di];
-    if (dayData.rest) continue;
-    html += '<tr class="day-head-row"><td colspan="' + (2+12) + '">' + dayData.name + '</td></tr>';
+    // Skip pure rest days only
+    if (dayData.rest && dayData.restLabel !== 'Cardio') continue;
+    html += '<tr class="day-head-row"><td colspan="' + (2+12) + '">' + dayData.name + (dayData.restLabel === 'Cardio' ? ' — Cardio' : '') + '</td></tr>';
+    // Cardio fields row
+    if (dayData.restLabel === 'Cardio') {
+      var cardioFields = [{key:'mode',label:'Cardio Mode'},{key:'speed',label:'Speed'},{key:'duration',label:'Duration (min)'}];
+      for (var fi = 0; fi < cardioFields.length; fi++) {
+        var fkey = cardioFields[fi].key, flabel = cardioFields[fi].label;
+        html += '<tr><td class="ex-cell">' + flabel + '</td><td style="color:var(--muted);font-size:.72rem">cardio</td>';
+        for (var w = 1; w <= 12; w++) {
+          var clog = S.logs[w] && S.logs[w][dayData.day] && S.logs[w][dayData.day]['cardio'];
+          var val = clog && clog[fkey] ? clog[fkey] : '';
+          html += '<td><input class="tbl-inp" type="text" style="width:80px" placeholder="—" value="' + val + '"'
+            + ' onchange="tblCardioUpd(' + w + ',' + dayData.day + ',\'' + fkey + '\',this.value)"></td>';
+        }
+        html += '</tr>';
+      }
+    }
+    // Exercises (works for both cardio and normal days)
     for (var ei = 0; ei < dayData.exercises.length; ei++) {
       var ex = dayData.exercises[ei];
       html += '<tr>'
@@ -954,6 +977,14 @@ function renderTable() {
   }
   html += '</tbody></table>';
   document.getElementById('tableWrap').innerHTML = html;
+}
+
+function tblCardioUpd(w, day, field, val) {
+  if (!S.logs[w]) S.logs[w] = {};
+  if (!S.logs[w][day]) S.logs[w][day] = {};
+  if (!S.logs[w][day]['cardio']) S.logs[w][day]['cardio'] = {mode:'',setting:'',speed:'',duration:'',notes:''};
+  S.logs[w][day]['cardio'][field] = val;
+  save();
 }
 
 function buildTblCell(w, day, exId) {
@@ -1166,8 +1197,9 @@ function renderEditList() {
     if (S.program[i].day === S.editDay) { dayData = S.program[i]; break; }
   }
   var list = document.getElementById('editList');
-  if (!dayData || dayData.rest) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:.82rem;padding:10px 0">Rest/Cardio day</div>';
+  if (!dayData) { list.innerHTML = ''; return; }
+  if (dayData.rest && dayData.restLabel !== 'Cardio') {
+    list.innerHTML = '<div style="color:var(--muted);font-size:.82rem;padding:10px 0">Rest day — no exercises.</div>';
     return;
   }
   var html = '';
@@ -1213,7 +1245,8 @@ function addExercise() {
   for (var i = 0; i < S.program.length; i++) {
     if (S.program[i].day === S.editDay) { dayData = S.program[i]; break; }
   }
-  if (!dayData || dayData.rest) return;
+  if (!dayData) return;
+  if (dayData.rest && dayData.restLabel !== 'Cardio') return;
   dayData.exercises.push({id:'d'+S.editDay+'e'+Date.now(), name:'', v:'', type:'accessory'});
   save(); renderEditList();
 }
