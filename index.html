@@ -237,6 +237,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ex-card{animation:fadeUp .18s ease both}
+.badge-rpe{background:rgba(200,255,0,.15);color:var(--accent);border:1px solid rgba(200,255,0,.4);font-size:.58rem;border-radius:5px;padding:1px 7px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+.badge-rpe.rpe-peak{background:rgba(255,77,77,.15);color:#ff6b6b;border:1px solid rgba(255,77,77,.4)}
+.rpe-target-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid rgba(200,255,0,.2);border-radius:8px;padding:8px 12px;margin-bottom:10px}
+.rpe-target-bar.rpe-peak-bar{border-color:rgba(255,77,77,.3);background:rgba(255,77,77,.05)}
+.rpe-target-label{font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.rpe-target-val{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--accent);line-height:1}
+.rpe-target-bar.rpe-peak-bar .rpe-target-val{color:#ff6b6b}
+.rpe-target-desc{font-size:.68rem;color:var(--sub);margin-left:auto}
 </style>
 </head>
 <body>
@@ -805,6 +813,13 @@ function renderDayContent() {
   attachListeners();
 }
 
+// RPE wave: weeks 1-2 no RPE, week 3+ runs 4-week wave: 5 → 6.5 → 8 → 10 → repeat
+function getTargetRPE(week) {
+  if (week < 3) return null;
+  var wave = [5, 6.5, 8, 10];
+  return wave[(week - 3) % 4];
+}
+
 function buildExCard(ex) {
   var log = getLog(S.week, S.day, ex.id);
   var isMain = ex.type === 'main';
@@ -816,6 +831,9 @@ function buildExCard(ex) {
   var summary = log.sets.length > 0 ? (doneCount + '/' + log.sets.length + ' sets logged' + lastW) : 'Tap to log sets';
   var badgeLabel = ex.type === 'main' ? 'Main' : ex.type === 'backoff' ? 'Backoff' : ex.type === 'straight sets' ? 'Str Sets' : 'Accessory';
   var badgeCls = (ex.type === 'main' || ex.type === 'straight sets') ? 'badge-main' : 'badge-acc';
+
+  var targetRPE = (ex.type === 'main') ? getTargetRPE(S.week) : null;
+  var isPeak = targetRPE === 10;
 
   var setRows = '';
   for (var i = 0; i < log.sets.length; i++) {
@@ -829,16 +847,29 @@ function buildExCard(ex) {
       + '</div>';
   }
 
+  var rpeBadge = targetRPE !== null
+    ? '<span class="badge-rpe' + (isPeak ? ' rpe-peak' : '') + '">' + (isPeak ? '🔴 RPE 10' : 'RPE ' + targetRPE) + '</span>'
+    : '';
+
+  var rpeBar = targetRPE !== null
+    ? '<div class="rpe-target-bar' + (isPeak ? ' rpe-peak-bar' : '') + '">'
+      + '<div><div class="rpe-target-label">Top Set Target</div><div class="rpe-target-val">RPE ' + targetRPE + '</div></div>'
+      + '<div class="rpe-target-desc">' + (isPeak ? '⚡ True single — push to your limit' : 'Leave ' + (10 - targetRPE) + ' reps in the tank') + '</div>'
+      + '</div>'
+    : '';
+
   return '<div class="ex-card' + (isMain ? ' main-lift' : '') + (allDone ? ' fully-done' : '') + '" id="ec_' + ex.id + '">'
     + '<div class="ex-header" onclick="toggleCard(\'' + ex.id + '\')">'
     + '<div class="ex-check" onclick="quickCheck(event,\'' + ex.id + '\')">' + (allDone ? '&#10003;' : '') + '</div>'
     + '<div class="ex-info">'
     + '<div class="ex-name-row"><span class="ex-name">' + ex.name + '</span>'
     + (ex.v ? '<span class="ex-var">' + ex.v + '</span>' : '')
-    + '<span class="ex-badge ' + badgeCls + '">' + badgeLabel + '</span></div>'
+    + '<span class="ex-badge ' + badgeCls + '">' + badgeLabel + '</span>'
+    + rpeBadge + '</div>'
     + '<div class="ex-summary">' + summary + '</div>'
     + '</div><span class="ex-chevron">&#9662;</span></div>'
     + '<div class="ex-body">'
+    + rpeBar
     + (log.sets.length > 0 ? '<div class="sets-header"><span>#</span><span>kg</span><span>Reps</span><span>&#10003;</span><span></span></div>' : '')
     + '<div id="sl_' + ex.id + '">' + setRows + '</div>'
     + '<button class="add-set-btn" onclick="addSet(\'' + ex.id + '\')">+ Add Set</button>'
@@ -954,7 +985,10 @@ function toggleDayDone() {
 // TABLE — fully editable
 function renderTable() {
   var html = '<table class="prog-table"><thead><tr><th>Exercise</th><th>Type</th>';
-  for (var w = 1; w <= 12; w++) html += '<th>Wk ' + w + '</th>';
+  for (var w = 1; w <= 12; w++) {
+    var rpe = getTargetRPE(w);
+    html += '<th>Wk ' + w + (rpe !== null ? '<br><span style="color:' + (rpe===10?'#ff6b6b':'var(--accent)') + ';font-size:.55rem;letter-spacing:.5px">RPE ' + rpe + '</span>' : '') + '</th>';
+  }
   html += '</tr></thead><tbody>';
   for (var di = 0; di < S.program.length; di++) {
     var dayData = S.program[di];
