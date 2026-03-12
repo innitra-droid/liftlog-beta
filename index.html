@@ -827,7 +827,8 @@ function buildExCard(ex) {
   for (var i = 0; i < log.sets.length; i++) { if (!log.sets[i].done) { allDone = false; break; } }
   var doneCount = 0;
   for (var i = 0; i < log.sets.length; i++) { if (log.sets[i].done) doneCount++; }
-  var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + 'kg' : '';
+  var wUnit = ex.id === 'd3e4' ? '\u00b0' : 'kg';
+  var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + wUnit : '';
   var summary = log.sets.length > 0 ? (doneCount + '/' + log.sets.length + ' sets logged' + lastW) : 'Tap to log sets';
   var badgeLabel = ex.type === 'main' ? 'Main' : ex.type === 'backoff' ? 'Backoff' : ex.type === 'straight sets' ? 'Str Sets' : 'Accessory';
   var badgeCls = (ex.type === 'main' || ex.type === 'straight sets') ? 'badge-main' : 'badge-acc';
@@ -840,7 +841,7 @@ function buildExCard(ex) {
     var s = log.sets[i];
     setRows += '<div class="set-row">'
       + '<span class="set-num">' + (i+1) + '</span>'
-      + '<input class="set-inp" type="number" inputmode="decimal" placeholder="kg" value="' + (s.w||'') + '" data-exid="' + ex.id + '" data-i="' + i + '" data-f="w">'
+      + '<input class="set-inp" type="number" inputmode="decimal" placeholder="' + wUnit + '" value="' + (s.w||'') + '" data-exid="' + ex.id + '" data-i="' + i + '" data-f="w">'
       + '<input class="set-inp" type="text" placeholder="reps" value="' + (s.r||'') + '" data-exid="' + ex.id + '" data-i="' + i + '" data-f="r">'
       + '<button class="tick-btn' + (s.done ? ' done' : '') + '" onclick="toggleSet(\'' + ex.id + '\',' + i + ')">&#10003;</button>'
       + '<button class="del-set-btn" onclick="deleteSet(\'' + ex.id + '\',' + i + ')" title="Remove">&#10005;</button>'
@@ -870,7 +871,7 @@ function buildExCard(ex) {
     + '</div><span class="ex-chevron">&#9662;</span></div>'
     + '<div class="ex-body">'
     + rpeBar
-    + (log.sets.length > 0 ? '<div class="sets-header"><span>#</span><span>kg</span><span>Reps</span><span>&#10003;</span><span></span></div>' : '')
+    + (log.sets.length > 0 ? '<div class="sets-header"><span>#</span><span>' + wUnit + '</span><span>Reps</span><span>&#10003;</span><span></span></div>' : '')
     + '<div id="sl_' + ex.id + '">' + setRows + '</div>'
     + '<button class="add-set-btn" onclick="addSet(\'' + ex.id + '\')">+ Add Set</button>'
     + '<textarea class="notes-ta" rows="2" placeholder="Notes..." data-notes="' + ex.id + '">' + (log.notes||'') + '</textarea>'
@@ -965,7 +966,8 @@ function refreshSummary(exId) {
   if (!el) return;
   var doneCount = 0;
   for (var i = 0; i < log.sets.length; i++) { if (log.sets[i].done) doneCount++; }
-  var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + 'kg' : '';
+  var wUnit = exId === 'd3e4' ? '\u00b0' : 'kg';
+  var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + wUnit : '';
   el.innerHTML = log.sets.length > 0 ? (doneCount + '/' + log.sets.length + ' sets logged' + lastW) : 'Tap to log sets';
 }
 function toggleDayDone() {
@@ -1037,12 +1039,13 @@ function tblCardioUpd(w, day, field, val) {
 
 function buildTblCell(w, day, exId) {
   var log = getLog(w, day, exId);
+  var wUnit = exId === 'd3e4' ? '\u00b0' : 'kg';
   var html = '';
   for (var i = 0; i < log.sets.length; i++) {
     var s = log.sets[i];
     html += '<div class="tbl-set-row">'
       + '<span style="font-size:.62rem;color:var(--muted);min-width:12px">' + (i+1) + '.</span>'
-      + '<input class="tbl-inp" type="number" inputmode="decimal" placeholder="kg" value="' + (s.w||'') + '"'
+      + '<input class="tbl-inp" type="number" inputmode="decimal" placeholder="' + wUnit + '" value="' + (s.w||'') + '"'
       + ' onchange="tblUpd(' + w + ',' + day + ',\'' + exId + '\',' + i + ',\'w\',this.value)">'
       + '<span class="tbl-x">x</span>'
       + '<input class="tbl-inp ri" type="text" placeholder="reps" value="' + (s.r||'') + '"'
@@ -1257,8 +1260,9 @@ function renderProgGraph(items) {
   for (var i=filled.length-1;i>=0;i--) {
     var prev=i<filled.length-1?filled[i+1]:null;
     var delta=prev?Math.round((filled[i].val-prev.val)*10)/10:null;
-    var dh=delta!==null?'<span class="delta '+(delta>0?'up':delta<0?'dn':'eq')+'">'+(delta>0?'+':'')+delta+'kg</span>':'';
-    logHtml+='<div class="prog-entry"><div><div class="pe-wk">Week '+filled[i].week+'</div><div class="pe-val">'+filled[i].val+' kg</div></div>'+dh+'</div>';
+    var pUnit = S.progLift === 'd3e4' ? '\u00b0' : 'kg';
+    var dh=delta!==null?'<span class="delta '+(delta>0?'up':delta<0?'dn':'eq')+'">'+(delta>0?'+':'')+delta+pUnit+'</span>':'';
+    logHtml+='<div class="prog-entry"><div><div class="pe-wk">Week '+filled[i].week+'</div><div class="pe-val">'+filled[i].val+' '+pUnit+'</div></div>'+dh+'</div>';
   }
   document.getElementById('progGraphLog').innerHTML = logHtml;
 }
