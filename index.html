@@ -268,7 +268,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="selectors-wrap">
     <div class="week-row">
       <span class="row-lbl">Week</span>
-      <div id="weekBtns" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none"></div>
+      <div id="weekBtns" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center"></div>
+    </div>
+    <div id="blockLabelRow" style="display:flex;gap:6px;padding:0 0 0 44px;font-size:.55rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding-bottom:2px">
+      <span style="width:108px;text-align:center">Block 1</span>
+      <span style="width:6px"></span>
+      <span style="width:108px;text-align:center">Block 2</span>
+      <span style="width:6px"></span>
+      <span style="width:108px;text-align:center">Block 3</span>
     </div>
     <div style="height:8px"></div>
     <div class="day-row" id="dayTabs"></div>
@@ -325,7 +332,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="edit-inner">
     <div class="edit-head">
       <h2>Edit Program</h2>
-      <p>Changes apply across all 12 weeks</p>
+      <p>Changes apply across all 9 weeks (3 × 3-week blocks)</p>
     </div>
     <div class="edit-day-picker" id="editDayPicker"></div>
     <div class="edit-list" id="editList"></div>
@@ -368,8 +375,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <div class="modal-ov" id="maxModal">
   <div class="modal">
     <h3>Update Maxes</h3>
-    <div class="mf"><label>Squat (kg)</label><input type="number" id="mxSq" inputmode="decimal"></div>
-    <div class="mf"><label>Deadlift (kg)</label><input type="number" id="mxDl" inputmode="decimal"></div>
+    <div class="mf"><label>HB Squat (kg)</label><input type="number" id="mxSq" inputmode="decimal"></div>
+    <div class="mf"><label>Sumo Deadlift (kg)</label><input type="number" id="mxDl" inputmode="decimal"></div>
     <div class="mf"><label>Bench (kg)</label><input type="number" id="mxBn" inputmode="decimal"></div>
     <div class="modal-acts">
       <button class="btn-s" onclick="closeModal()">Cancel</button>
@@ -388,50 +395,76 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </div>
 
 <script>
+// ── 3-WEEK BLOCK PROGRAM ──
+// Schedule: Mon (squat+bench heavy) | Tue (posterior chain) | Thu (squat+bench moderate) | Sat (deadlift+bench light)
+// RPE waves — 3-week cycle:
+//   Primary:   W1 RPE 5–6 → W2 RPE 7–8 → W3★ RPE 8–9
+//   Secondary: W1 RPE 5–6 → W2 RPE 6–7 → W3  RPE 7–8
+//   Tertiary:  W1 RPE 5–6 → W2 RPE 5–6 → W3  RPE 6–7
+//   Variation: ascending RPE within session AND week to week (see subtitle)
+//   Back-offs: weight fixed from W1, do not change
 var DEFAULT_PROGRAM = [
-  { day:1, name:'Day 1', rest:false, exercises:[
-    {id:'d1e1',name:'Squat',v:'Competition',type:'main'},
-    {id:'d1e2',name:'Squat Backoff',v:'',type:'backoff'},
-    {id:'d1e3',name:'Bench Press',v:'Floor',type:'main'},
-    {id:'d1e4',name:'Bench Backoff',v:'',type:'backoff'},
-    {id:'d1e5',name:'Leg Press',v:'Squat Assistance',type:'accessory'},
-    {id:'d1e6',name:'Quad Extensions',v:'',type:'accessory'},
-    {id:'d1e7',name:'Decline Flies',v:'',type:'accessory'},
-    {id:'d1e8',name:'Cable Pushdown',v:'',type:'accessory'},
-    {id:'d1e9',name:'Overhead Extension',v:'',type:'accessory'},
-    {id:'d1e10',name:'Chins',v:'Wide Grip',type:'accessory'}
+  { day:1, name:'Mon', rest:false, exercises:[
+    // PRIMARY: High Bar Squat — W1: 1×3 RPE 5–6 | W2: 1×2 RPE 7–8 | W3★: 1×1 RPE 8–9
+    {id:'d1e1',name:'High Bar Squat',v:'Top Set — W1: 1×3 · W2: 1×2 · W3★: 1×1',type:'main'},
+    {id:'d1e2',name:'High Bar Squat',v:'Back-off — 4×5 · weight fixed from W1 · do not change',type:'backoff'},
+    // PRIMARY: Bench Press — bulldog grip, touch sternum/upper abs, leg drive
+    // W1: 1×1 RPE 7–8 | W2: 1×1 RPE 8 | W3★: 1×1 RPE 9 | Back-off = top single −20%, fixed W1
+    {id:'d1e3',name:'Bench Press',v:'Top Single — W1: RPE 7–8 · W2: RPE 8 · W3★: RPE 9',type:'main'},
+    {id:'d1e4',name:'Bench Press',v:'Back-off — 4×5 · top single −20% · fixed from W1',type:'backoff'},
+    // ACCESSORIES — all bench accessories here, 72hrs to Thursday
+    {id:'d1e5',name:'Decline Fly',v:'2×8–12 · RPE 9',type:'accessory'},
+    {id:'d1e6',name:'Tricep Pushdown',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d1e7',name:'Tricep Extension',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d1e8',name:'Rear Delt Raise',v:'3×10–12 · RPE 9',type:'accessory'},
+    {id:'d1e9',name:'Lateral Raise',v:'3×10–12 · RPE 9',type:'accessory'}
   ]},
-  { day:2, name:'Day 2', rest:true, restLabel:'Cardio', restEmoji:'&#128692;', exercises:[] },
-  { day:3, name:'Day 3', rest:false, exercises:[
-    {id:'d3e1',name:'Bench Press',v:'Competition',type:'main'},
-    {id:'d3e2',name:'Bench Backoff',v:'',type:'backoff'},
-    {id:'d3e3',name:'Romanian Deadlift',v:'',type:'straight sets'},
-    {id:'d3e4',name:'Nordics',v:'',type:'accessory'},
-    {id:'d3e5',name:'BOR',v:'Barbell Row',type:'accessory'},
-    {id:'d3e6',name:'Pelican Curl',v:'',type:'accessory'},
-    {id:'d3e7',name:'Lying Cable Curl',v:'',type:'accessory'}
+  { day:2, name:'Tue', rest:false, exercises:[
+    // SECONDARY DL: RDL — ascending RPE week to week, NOT fixed back-off
+    // W1: 2×5–6 RPE 6 | W2: 2×6 RPE 7 | W3★: 2×7–8 RPE 8
+    {id:'d2e1',name:'RDL',v:'W1: 2×5–6 RPE 6 · W2: 2×6 RPE 7 · W3★: 2×7–8 RPE 8',type:'variation'},
+    // ACCESSORIES — posterior chain + arms, no spinal loading
+    {id:'d2e2',name:'Nordic Curl',v:'2–3 sets · log degrees not kg · RPE 8–9',type:'accessory'},
+    {id:'d2e3',name:'Pelican Curl',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d2e4',name:'Ring Curl',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d2e5',name:'BOR',v:'3×6–8 · RPE 8–9',type:'accessory'},
+    {id:'d2e6',name:'Wide Grip Chin',v:'2–3×6–8 · RPE 8–9',type:'accessory'},
+    {id:'d2e7',name:'Core / Abs',v:'3×10–15 · RPE 8–9',type:'accessory'}
   ]},
-  { day:4, name:'Day 4', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] },
-  { day:5, name:'Day 5', rest:false, exercises:[
-    {id:'d5e1',name:'Squat',v:'Alternative',type:'main'},
-    {id:'d5e2',name:'Bench',v:'Light',type:'main'},
-    {id:'d5e3',name:'Wide Grip Chins',v:'',type:'accessory'},
-    {id:'d5e4',name:'Pec Accessory',v:'',type:'accessory'},
-    {id:'d5e5',name:'Rolling Tricep Extension',v:'',type:'accessory'},
-    {id:'d5e6',name:'Lateral Raises',v:'',type:'accessory'},
-    {id:'d5e7',name:'Abs',v:'',type:'accessory'}
+  { day:3, name:'Wed', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] },
+  { day:4, name:'Thu', rest:false, exercises:[
+    // SECONDARY SQUAT: Low Bar — lighter than Mon all block, top set + back-off
+    // W1: 1×4–5 RPE 5–6 | W2: 1×4–5 RPE 6–7 | W3★: 1×3 RPE 7–8
+    {id:'d4e1',name:'Low Bar Squat',v:'Top Set — W1: 1×4–5 · W2: 1×4–5 · W3★: 1×3 · lighter than Mon',type:'secondary'},
+    {id:'d4e2',name:'Low Bar Squat',v:'Back-off — 3×4–5 · weight fixed from W1',type:'backoff'},
+    // SECONDARY BENCH: Floor Press — ascending RPE, no leg drive
+    // W1: 3×5 RPE 5/6/7 | W2: 3×5 RPE 6/7/8 | W3: 3×5 RPE 7/8/8
+    {id:'d4e3',name:'Floor Press',v:'Ascending 3×5 · No leg drive · W1: RPE 5/6/7 · W2: RPE 6/7/8 · W3: RPE 7/8/8',type:'variation'},
+    // ACCESSORIES
+    {id:'d4e4',name:'Incline Fly',v:'2×8–12 · RPE 9',type:'accessory'},
+    {id:'d4e5',name:'Tricep Pushdown',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d4e6',name:'Tricep Extension',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d4e7',name:'Lateral Raise',v:'3×10–12 · RPE 9',type:'accessory'},
+    {id:'d4e8',name:'Leg Extension',v:'2×8–12 · RPE 9',type:'accessory'},
+    {id:'d4e9',name:'Leg Press',v:'3×8–10 · RPE 8–9',type:'accessory'}
   ]},
-  { day:6, name:'Day 6', rest:false, exercises:[
-    {id:'d6e1',name:'Deadlift',v:'Competition',type:'main'},
-    {id:'d6e2',name:'Deadlift Backoff',v:'',type:'backoff'},
-    {id:'d6e3',name:'Shrugs',v:'',type:'accessory'},
-    {id:'d6e4',name:'Squat',v:'Light',type:'main'},
-    {id:'d6e5',name:'Incline Curl',v:'',type:'accessory'},
-    {id:'d6e6',name:'Preacher Curl',v:'',type:'accessory'},
-    {id:'d6e7',name:'Jeffersons',v:'BW',type:'accessory'},
-    {id:'d6e8',name:'Hypers',v:'',type:'accessory'}
+  { day:5, name:'Fri', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] },
+  { day:6, name:'Sat', rest:false, exercises:[
+    // PRIMARY: Sumo Deadlift — W1: 1×2–3 RPE 5–6 | W2: 1×2 RPE 7–8 | W3★: 1×1 RPE 8–9
+    // Back-off ~60% 1RM, fixed from W1
+    {id:'d6e1',name:'Sumo Deadlift',v:'Top Set — W1: 1×2–3 · W2: 1×2 · W3★: 1×1',type:'main'},
+    {id:'d6e2',name:'Sumo Deadlift',v:'Back-off — 3×4 · ~60% 1RM · weight fixed from W1',type:'backoff'},
+    // TERTIARY BENCH: light skill-practice single then wide grip block volume
+    // Single W1–2: RPE 5–6 | W3: RPE 6–7. Block ascending W1: RPE 6–7 | W2: RPE 7–8 | W3: RPE 8
+    {id:'d6e3',name:'Bench Press',v:'Tertiary single — W1–2: RPE 5–6 · W3: RPE 6–7 · always well below Mon',type:'secondary'},
+    {id:'d6e4',name:'Wide Grip Block',v:'Ascending 3×8 · W1: RPE 6–7 · W2: RPE 7–8 · W3: RPE 8',type:'variation'},
+    // ACCESSORIES
+    {id:'d6e5',name:'Wide Grip Chin',v:'2–3×6–8 · RPE 8–9',type:'accessory'},
+    {id:'d6e6',name:'Power Shrugs',v:'3×5–6 · heavy · explosive',type:'accessory'},
+    {id:'d6e7',name:'Ring Curl',v:'3×8–10 · RPE 9',type:'accessory'},
+    {id:'d6e8',name:'Pelican Curl',v:'3×8–10 · RPE 9',type:'accessory'}
   ]},
-  { day:7, name:'Day 7', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] }
+  { day:7, name:'Sun', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] }
 ];
 
 // State
@@ -443,7 +476,7 @@ var S = {
   week: 1,
   day: 1,
   editDay: 1,
-  progLift: 'Squat',
+  progLift: 'High Bar Squat',
   health: {}
 };
 
@@ -548,22 +581,26 @@ function load() {
 
 function applyData(parsed) {
   S.maxes = parsed.maxes || S.maxes;
-  var savedWeek = parsed.week || 1;
-  // Migrate to new 7-day program only from week 2 onwards
-  if (parsed.program && parsed.program.length >= DEFAULT_PROGRAM.length) {
-    S.program = parsed.program;
-  } else if (parsed.program && parsed.program.length > 0 && savedWeek < 2) {
-    S.program = parsed.program; // keep old program for week 1
-  } else {
-    S.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
-  }
-  S.logs = parsed.logs || {};
-  S.doneDays = parsed.doneDays || {};
-  S.week = savedWeek;
-  S.day = parsed.day || 1;
-  S.editDay = parsed.editDay || 1;
-  S.progLift = parsed.progLift || 'Squat';
   S.health = parsed.health || {};
+  S.logs = parsed.logs || {};
+  // Detect if this is a returning v4 user (3-week block program) or a new/older version user
+  if (parsed.programVersion === 'v4') {
+    // Returning user on the 3-week block program — restore their position
+    S.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
+    S.doneDays = parsed.doneDays || {};
+    S.week = parsed.week || 1;
+    S.day = parsed.day || 1;
+  } else {
+    // New load or upgrade from older version — start fresh at W1/D1, preserve health & maxes only
+    S.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
+    S.logs = {};
+    S.doneDays = {};
+    S.week = 1;
+    S.day = 1;
+  }
+  S.programVersion = 'v4';
+  S.editDay = parsed.editDay || 1;
+  S.progLift = parsed.progLift || 'High Bar Squat';
 }
 
 function loadFromLocal() {
@@ -622,7 +659,7 @@ function navigateDay(dir) {
   for (var i = 0; i < S.program.length; i++) { if (S.program[i].day === S.day) { idx = i; break; } }
   var next = idx + dir;
   if (next < 0) { if (S.week > 1) { S.week--; next = S.program.length-1; } else return; }
-  else if (next >= S.program.length) { if (S.week < 12) { S.week++; next = 0; } else return; }
+  else if (next >= S.program.length) { if (S.week < 9) { S.week++; next = 0; } else return; }
   var cont = document.getElementById('dayContent');
   cont.classList.add(dir > 0 ? 'slide-left' : 'slide-right');
   setTimeout(function() {
@@ -637,7 +674,7 @@ function updateSwipeHints() {
   var l = document.getElementById('swipeLeft'), r = document.getElementById('swipeRight');
   if (!l || !r) return;
   l.textContent = idx > 0 ? '\u2190 '+S.program[idx-1].name : (S.week > 1 ? '\u2190 Wk'+(S.week-1)+' D6' : '');
-  r.textContent = idx < S.program.length-1 ? S.program[idx+1].name+' \u2192' : (S.week < 12 ? 'Wk'+(S.week+1)+' D1 \u2192' : '');
+  r.textContent = idx < S.program.length-1 ? S.program[idx+1].name+' \u2192' : (S.week < 9 ? 'Wk'+(S.week+1)+' D1 \u2192' : '');
 }
 
 // Navigation
@@ -659,8 +696,8 @@ function openView(id) {
 // Maxes
 function renderMaxes() {
   var items = [
-    {lbl:'Squat', v:S.maxes.squat},
-    {lbl:'Deadlift', v:S.maxes.deadlift},
+    {lbl:'HB Squat', v:S.maxes.squat},
+    {lbl:'Sumo DL', v:S.maxes.deadlift},
     {lbl:'Bench', v:S.maxes.bench}
   ];
   var html = '';
@@ -694,17 +731,32 @@ document.getElementById('maxModal').addEventListener('click', function(e) {
 function renderWeekBtns() {
   var c = document.getElementById('weekBtns');
   c.innerHTML = '';
-  for (var w = 1; w <= 12; w++) {
+  for (var w = 1; w <= 9; w++) {
+    var bwk = getBlockWeek(w);
     var btn = document.createElement('button');
     btn.className = 'week-btn' + (w === S.week ? ' active' : '');
+    // Label: Wk 1/2/3 with block separator
     btn.textContent = w;
     if (S.logs[w]) btn.classList.add('has-data');
+    // Add subtle block divider visual via title
+    btn.title = 'Block ' + getBlockNum(w) + ' · Week ' + bwk + '/3' + (bwk === 3 ? ' ★ PR' : '');
     btn.setAttribute('data-week', w);
     btn.onclick = (function(wk) {
       return function() { S.week = wk; save(); renderAll(); };
     })(w);
     c.appendChild(btn);
   }
+  // Block labels between groups
+  var wrap = document.getElementById('weekBtns');
+  var btns = wrap.querySelectorAll('.week-btn');
+  // Insert block dividers after weeks 3 and 6
+  [2, 5].forEach(function(idx) {
+    if (btns[idx] && btns[idx+1]) {
+      var div = document.createElement('span');
+      div.style.cssText = 'width:1px;height:20px;background:var(--border);flex-shrink:0;align-self:center;margin:0 2px';
+      wrap.insertBefore(div, btns[idx+1]);
+    }
+  });
 }
 
 function renderDayTabs() {
@@ -796,7 +848,7 @@ function renderDayContent() {
   var mainEx = [], accEx = [];
   for (var i = 0; i < dayData.exercises.length; i++) {
     var ex = dayData.exercises[i];
-    if (ex.type === 'main' || ex.type === 'backoff') mainEx.push(ex);
+    if (ex.type === 'main' || ex.type === 'secondary' || ex.type === 'backoff' || ex.type === 'variation') mainEx.push(ex);
     else accEx.push(ex);
   }
   if (mainEx.length) {
@@ -813,28 +865,48 @@ function renderDayContent() {
   attachListeners();
 }
 
-// RPE wave: weeks 1-2 no RPE, week 3+ runs 4-week wave: 5 → 6.5 → 8 → 10 → repeat
+// 3-week block RPE wave: W1=5–6 (conservative), W2=7–8 (building), W3★=8–9 (PR week), then repeats
 function getTargetRPE(week) {
-  if (week < 3) return null;
-  var wave = [5, 6.5, 8, 10];
-  return wave[(week - 3) % 4];
+  var wave = [5.5, 7.5, 9];
+  return wave[(week - 1) % 3];
+}
+function getRPERange(week) {
+  var wave = ['5–6', '7–8', '8–9'];
+  return wave[(week - 1) % 3];
+}
+// Secondary lifts: higher reps, lower intensity — caps at RPE 7–8, never reaches primary peak
+function getSecondaryRPERange(week) {
+  var wave = ['5–6', '6–7', '7–8'];
+  return wave[(week - 1) % 3];
+}
+// Tertiary lifts: always lightest — skill practice only, caps at RPE 6–7
+function getTertiaryRPERange(week) {
+  var wave = ['5–6', '5–6', '6–7'];
+  return wave[(week - 1) % 3];
+}
+function getBlockWeek(week) {
+  return ((week - 1) % 3) + 1;
+}
+function getBlockNum(week) {
+  return Math.ceil(week / 3);
 }
 
 function buildExCard(ex) {
   var log = getLog(S.week, S.day, ex.id);
-  var isMain = ex.type === 'main';
+  var isMain = (ex.type === 'main' || ex.type === 'secondary' || ex.type === 'variation');
   var allDone = log.sets.length > 0;
   for (var i = 0; i < log.sets.length; i++) { if (!log.sets[i].done) { allDone = false; break; } }
   var doneCount = 0;
   for (var i = 0; i < log.sets.length; i++) { if (log.sets[i].done) doneCount++; }
-  var wUnit = ex.id === 'd3e4' ? '\u00b0' : 'kg';
+  var wUnit = 'kg';
   var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + wUnit : '';
   var summary = log.sets.length > 0 ? (doneCount + '/' + log.sets.length + ' sets logged' + lastW) : 'Tap to log sets';
-  var badgeLabel = ex.type === 'main' ? 'Main' : ex.type === 'backoff' ? 'Backoff' : ex.type === 'straight sets' ? 'Str Sets' : 'Accessory';
-  var badgeCls = (ex.type === 'main' || ex.type === 'straight sets') ? 'badge-main' : 'badge-acc';
+  var badgeLabel = ex.type === 'main' ? 'Primary' : ex.type === 'secondary' ? 'Secondary' : ex.type === 'backoff' ? 'Backoff' : ex.type === 'variation' ? 'Variation' : 'Accessory';
+  var badgeCls = (ex.type === 'main' || ex.type === 'secondary' || ex.type === 'variation') ? 'badge-main' : 'badge-acc';
 
-  var targetRPE = (ex.type === 'main') ? getTargetRPE(S.week) : null;
-  var isPeak = targetRPE === 10;
+  var blockWk = getBlockWeek(S.week);
+  var blockNum = getBlockNum(S.week);
+  var isPeak = (blockWk === 3) && (ex.type === 'main');
 
   var setRows = '';
   for (var i = 0; i < log.sets.length; i++) {
@@ -848,16 +920,40 @@ function buildExCard(ex) {
       + '</div>';
   }
 
-  var rpeBadge = targetRPE !== null
-    ? '<span class="badge-rpe' + (isPeak ? ' rpe-peak' : '') + '">' + (isPeak ? '🔴 RPE 10' : 'RPE ' + targetRPE) + '</span>'
-    : '';
+  // RPE display — different per type
+  var rpeBadge = '', rpeBar = '', backoffBar = '';
 
-  var rpeBar = targetRPE !== null
-    ? '<div class="rpe-target-bar' + (isPeak ? ' rpe-peak-bar' : '') + '">'
-      + '<div><div class="rpe-target-label">Top Set Target</div><div class="rpe-target-val">RPE ' + targetRPE + '</div></div>'
-      + '<div class="rpe-target-desc">' + (isPeak ? '⚡ True single — push to your limit' : 'Leave ' + (10 - targetRPE) + ' reps in the tank') + '</div>'
-      + '</div>'
-    : '';
+  if (ex.type === 'main') {
+    var rpeRange = getRPERange(S.week);
+    var rpeDescs = ['Leave 4–5 reps in the tank · build the pattern','Leave 2–3 reps in the tank · push the weight','★ PR week — push to RPE 9, no grinding'];
+    rpeBadge = '<span class="badge-rpe' + (isPeak ? ' rpe-peak' : '') + '">RPE ' + rpeRange + '</span>';
+    rpeBar = '<div class="rpe-target-bar' + (isPeak ? ' rpe-peak-bar' : '') + '">'
+      + '<div><div class="rpe-target-label">Primary · Block ' + blockNum + ' · W' + blockWk + '/3</div>'
+      + '<div class="rpe-target-val" style="' + (isPeak ? 'color:#ff6b6b' : '') + '">' + rpeRange + '</div></div>'
+      + '<div class="rpe-target-desc">' + rpeDescs[blockWk - 1] + '</div></div>';
+
+  } else if (ex.type === 'secondary') {
+    var isTertiary = (ex.id === 'd6e3');
+    var secRange = isTertiary ? getTertiaryRPERange(S.week) : getSecondaryRPERange(S.week);
+    var secDesc = isTertiary ? 'Skill practice only · always well below Monday' : 'Secondary · lower than primary all block';
+    rpeBadge = '<span class="badge-rpe">RPE ' + secRange + '</span>';
+    rpeBar = '<div class="rpe-target-bar">'
+      + '<div><div class="rpe-target-label">' + (isTertiary ? 'Tertiary' : 'Secondary') + ' · Block ' + blockNum + ' · W' + blockWk + '/3</div>'
+      + '<div class="rpe-target-val" style="color:var(--sub)">' + secRange + '</div></div>'
+      + '<div class="rpe-target-desc">' + secDesc + '</div></div>';
+
+  } else if (ex.type === 'variation') {
+    rpeBadge = '';
+    rpeBar = '<div class="rpe-target-bar">'
+      + '<div><div class="rpe-target-label">Variation · Ascending · W' + blockWk + '/3</div>'
+      + '<div class="rpe-target-val" style="font-size:.78rem;color:var(--sub)">See subtitle</div></div>'
+      + '<div class="rpe-target-desc">RPE climbs within session &amp; across the block</div></div>';
+
+  } else if (ex.type === 'backoff') {
+    backoffBar = '<div class="rpe-target-bar"><div><div class="rpe-target-label">Back-off · Fixed Weight</div>'
+      + '<div class="rpe-target-val" style="font-size:.78rem;color:var(--sub)">W1 weight</div></div>'
+      + '<div class="rpe-target-desc">Set in Week 1 — do not change for the block</div></div>';
+  }
 
   return '<div class="ex-card' + (isMain ? ' main-lift' : '') + (allDone ? ' fully-done' : '') + '" id="ec_' + ex.id + '">'
     + '<div class="ex-header" onclick="toggleCard(\'' + ex.id + '\')">'
@@ -871,6 +967,7 @@ function buildExCard(ex) {
     + '</div><span class="ex-chevron">&#9662;</span></div>'
     + '<div class="ex-body">'
     + rpeBar
+    + backoffBar
     + (log.sets.length > 0 ? '<div class="sets-header"><span>#</span><span>' + wUnit + '</span><span>Reps</span><span>&#10003;</span><span></span></div>' : '')
     + '<div id="sl_' + ex.id + '">' + setRows + '</div>'
     + '<button class="add-set-btn" onclick="addSet(\'' + ex.id + '\')">+ Add Set</button>'
@@ -966,7 +1063,7 @@ function refreshSummary(exId) {
   if (!el) return;
   var doneCount = 0;
   for (var i = 0; i < log.sets.length; i++) { if (log.sets[i].done) doneCount++; }
-  var wUnit = exId === 'd3e4' ? '\u00b0' : 'kg';
+  var wUnit = 'kg';
   var lastW = (log.sets.length > 0 && log.sets[log.sets.length-1].w) ? ' &middot; ' + log.sets[log.sets.length-1].w + wUnit : '';
   el.innerHTML = log.sets.length > 0 ? (doneCount + '/' + log.sets.length + ' sets logged' + lastW) : 'Tap to log sets';
 }
@@ -987,23 +1084,26 @@ function toggleDayDone() {
 // TABLE — fully editable
 function renderTable() {
   var html = '<table class="prog-table"><thead><tr><th>Exercise</th><th>Type</th>';
-  for (var w = 1; w <= 12; w++) {
-    var rpe = getTargetRPE(w);
-    html += '<th>Wk ' + w + (rpe !== null ? '<br><span style="color:' + (rpe===10?'#ff6b6b':'var(--accent)') + ';font-size:.55rem;letter-spacing:.5px">RPE ' + rpe + '</span>' : '') + '</th>';
+  for (var w = 1; w <= 9; w++) {
+    var bwk = getBlockWeek(w);
+    var bnum = getBlockNum(w);
+    var rpeR = getRPERange(w);
+    var isPkCol = bwk === 3;
+    var blockLabel = bwk === 1 ? 'Blk ' + bnum : '';
+    html += '<th>' + (blockLabel ? '<span style="font-size:.5rem;color:var(--muted);display:block">' + blockLabel + '</span>' : '')
+      + 'Wk ' + w + '<br><span style="color:' + (isPkCol?'#ff6b6b':'var(--accent)') + ';font-size:.55rem;letter-spacing:.5px">RPE ' + rpeR + (isPkCol?' ★':'') + '</span></th>';
   }
   html += '</tr></thead><tbody>';
   for (var di = 0; di < S.program.length; di++) {
     var dayData = S.program[di];
-    // Skip pure rest days only
     if (dayData.rest && dayData.restLabel !== 'Cardio') continue;
-    html += '<tr class="day-head-row"><td colspan="' + (2+12) + '">' + dayData.name + (dayData.restLabel === 'Cardio' ? ' — Cardio' : '') + '</td></tr>';
-    // Cardio fields row
+    html += '<tr class="day-head-row"><td colspan="' + (2+9) + '">' + dayData.name + (dayData.restLabel === 'Cardio' ? ' — Cardio' : '') + '</td></tr>';
     if (dayData.restLabel === 'Cardio') {
       var cardioFields = [{key:'mode',label:'Cardio Mode'},{key:'speed',label:'Speed'},{key:'duration',label:'Duration (min)'}];
       for (var fi = 0; fi < cardioFields.length; fi++) {
         var fkey = cardioFields[fi].key, flabel = cardioFields[fi].label;
         html += '<tr><td class="ex-cell">' + flabel + '</td><td style="color:var(--muted);font-size:.72rem">cardio</td>';
-        for (var w = 1; w <= 12; w++) {
+        for (var w = 1; w <= 9; w++) {
           var clog = S.logs[w] && S.logs[w][dayData.day] && S.logs[w][dayData.day]['cardio'];
           var val = clog && clog[fkey] ? clog[fkey] : '';
           html += '<td><input class="tbl-inp" type="text" style="width:80px" placeholder="—" value="' + val + '"'
@@ -1012,13 +1112,12 @@ function renderTable() {
         html += '</tr>';
       }
     }
-    // Exercises (works for both cardio and normal days)
     for (var ei = 0; ei < dayData.exercises.length; ei++) {
       var ex = dayData.exercises[ei];
       html += '<tr>'
         + '<td class="ex-cell">' + ex.name + (ex.v ? '<br><span style="color:var(--muted);font-size:.68rem">' + ex.v + '</span>' : '') + '</td>'
-        + '<td style="color:var(--muted);font-size:.72rem">' + ex.type + '</td>';
-      for (var w = 1; w <= 12; w++) {
+        + '<td style="color:var(--muted);font-size:.72rem">' + (ex.type === 'main' ? 'Primary' : ex.type === 'secondary' ? 'Secondary' : ex.type === 'variation' ? 'Variation' : ex.type === 'backoff' ? 'Backoff' : 'Accessory') + '</td>';
+      for (var w = 1; w <= 9; w++) {
         var cellId = 'tc_' + w + '_' + dayData.day + '_' + ex.id;
         html += '<td id="' + cellId + '" style="min-width:110px">' + buildTblCell(w, dayData.day, ex.id) + '</td>';
       }
@@ -1039,7 +1138,7 @@ function tblCardioUpd(w, day, field, val) {
 
 function buildTblCell(w, day, exId) {
   var log = getLog(w, day, exId);
-  var wUnit = exId === 'd3e4' ? '\u00b0' : 'kg';
+  var wUnit = 'kg';
   var html = '';
   for (var i = 0; i < log.sets.length; i++) {
     var s = log.sets[i];
@@ -1091,7 +1190,7 @@ function tblAdd(w, day, exId) {
 // CSV EXPORT
 function exportCSV() {
   var rows = [['Week','Day','Exercise','Type','Set','Weight(kg)','Reps','Done']];
-  for (var w = 1; w <= 12; w++) {
+  for (var w = 1; w <= 9; w++) {
     for (var di = 0; di < S.program.length; di++) {
       var dd = S.program[di];
       // Cardio day — export cardio session + any exercises
@@ -1161,7 +1260,7 @@ function getAllExercises() {
 }
 function getExerciseData(exId, dayNum) {
   var data = [];
-  for (var w = 1; w <= 12; w++) {
+  for (var w = 1; w <= 9; w++) {
     var log = S.logs[w] && S.logs[w][dayNum] && S.logs[w][dayNum][exId];
     var topW = null, topR = null;
     if (log && log.sets.length) {
@@ -1172,7 +1271,7 @@ function getExerciseData(exId, dayNum) {
         if (topW===null || wv>topW || (wv===topW && rv>topR)) { topW=wv; topR=rv; }
       }
     }
-    data.push({week:w, w:topW, r:topR});
+    data.push({week:w, w:topW, r:topR, blockWk: getBlockWeek(w), blockNum: getBlockNum(w)});
   }
   return data;
 }
@@ -1248,7 +1347,7 @@ function renderProgGraph(items) {
       if(i>0){pts+=' ';area1+=' ';} pts+=x+','+y; area1+=x+','+y;
       circles+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="var(--accent)"/>';
       labels+='<text x="'+x+'" y="'+(y-7)+'" text-anchor="middle" font-size="7" fill="var(--accent)" font-family="DM Sans,sans-serif">'+filled[i].val+'</text>';
-      labels+='<text x="'+x+'" y="'+(H+10)+'" text-anchor="middle" font-size="6" fill="var(--muted)" font-family="DM Sans,sans-serif">W'+filled[i].week+'</text>';
+      labels+='<text x="'+x+'" y="'+(H+10)+'" text-anchor="middle" font-size="6" fill="var(--muted)" font-family="DM Sans,sans-serif">B'+filled[i].blockNum+'W'+filled[i].blockWk+'</text>';
     }
     for(var i=filled.length-1;i>=0;i--){area2+=' '+((i/(filled.length-1))*W)+','+H;}
     chartEl.innerHTML='<svg viewBox="0 -10 '+W+' '+(H+16)+'" preserveAspectRatio="none">'
@@ -1260,9 +1359,9 @@ function renderProgGraph(items) {
   for (var i=filled.length-1;i>=0;i--) {
     var prev=i<filled.length-1?filled[i+1]:null;
     var delta=prev?Math.round((filled[i].val-prev.val)*10)/10:null;
-    var pUnit = S.progLift === 'd3e4' ? '\u00b0' : 'kg';
+    var pUnit = 'kg';
     var dh=delta!==null?'<span class="delta '+(delta>0?'up':delta<0?'dn':'eq')+'">'+(delta>0?'+':'')+delta+pUnit+'</span>':'';
-    logHtml+='<div class="prog-entry"><div><div class="pe-wk">Week '+filled[i].week+'</div><div class="pe-val">'+filled[i].val+' '+pUnit+'</div></div>'+dh+'</div>';
+    logHtml+='<div class="prog-entry"><div><div class="pe-wk">Block '+filled[i].blockNum+' · W'+filled[i].blockWk+'/3</div><div class="pe-val">'+filled[i].val+' '+pUnit+'</div></div>'+dh+'</div>';
   }
   document.getElementById('progGraphLog').innerHTML = logHtml;
 }
@@ -1297,7 +1396,9 @@ function renderEditList() {
       + '<div class="edit-top">'
       + '<input class="edit-inp" type="text" placeholder="Exercise name" value="' + ex.name + '" onchange="updEx(' + S.editDay + ',\'' + ex.id + '\',\'name\',this.value)">'
       + '<select class="type-sel" onchange="updEx(' + S.editDay + ',\'' + ex.id + '\',\'type\',this.value)">'
-      + '<option value="main"' + (ex.type==='main'?' selected':'') + '>Main</option>'
+      + '<option value="main"' + (ex.type==='main'?' selected':'') + '>Primary</option>'
+      + '<option value="secondary"' + (ex.type==='secondary'?' selected':'') + '>Secondary</option>'
+      + '<option value="variation"' + (ex.type==='variation'?' selected':'') + '>Variation</option>'
       + '<option value="backoff"' + (ex.type==='backoff'?' selected':'') + '>Backoff</option>'
       + '<option value="accessory"' + (ex.type==='accessory'?' selected':'') + '>Accessory</option>'
       + '</select>'
