@@ -557,40 +557,52 @@ function pushToSupabase() {
   }).catch(function() { setSyncStatus('error'); });
 }
 
+function countLogEntries(logs) {
+  // Count total individual set entries across all weeks/days/exercises
+  var total = 0;
+  if (!logs) return 0;
+  for (var w in logs) {
+    for (var d in logs[w]) {
+      for (var ex in logs[w][d]) {
+        var sets = logs[w][d][ex].sets;
+        if (sets) total += sets.length;
+        else total += 1; // cardio or other entry
+      }
+    }
+  }
+  return total;
+}
+
 function load() {
   document.getElementById('dayContent').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);font-size:.85rem">Loading your data...</div>';
   setSyncStatus('saving');
-  // Always load local data first so the app is immediately usable and edits are never lost
-  loadFromLocal();
-  var localSnapshot = JSON.parse(JSON.stringify(S));
   fetch(SUPA_URL + '/rest/v1/logs?id=eq.main&select=data,updated_at', {
     headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
   }).then(function(r) { return r.json(); })
   .then(function(rows) {
-    if (rows && rows.length > 0 && rows[0].data && Object.keys(rows[0].data).length > 0) {
-      var cloudData = rows[0].data;
-      var cloudUpdated = rows[0].updated_at ? new Date(rows[0].updated_at).getTime() : 0;
-      // Prefer local data if it has more logs or is a v4 program while cloud isn't
-      var localLogs = Object.keys(localSnapshot.logs || {}).length;
-      var cloudLogs = Object.keys((cloudData.logs)||{}).length;
-      var localIsNewer = (localSnapshot.programVersion === 'v4') && (cloudData.programVersion !== 'v4' || localLogs >= cloudLogs);
-      if (localIsNewer) {
-        // Keep local state; push it to cloud to sync
-        applyData(localSnapshot);
-        pushToSupabase();
-      } else {
-        applyData(cloudData);
-        try { localStorage.setItem('pl2025', JSON.stringify(S)); } catch(e) {}
-      }
+    var cloudData = (rows && rows.length > 0 && rows[0].data) ? rows[0].data : null;
+    var cloudEntries = cloudData ? countLogEntries(cloudData.logs) : 0;
+    // Read local data for comparison
+    var localData = null;
+    try { var d = localStorage.getItem('pl2025'); if (d) localData = JSON.parse(d); } catch(e) {}
+    var localEntries = localData ? countLogEntries(localData.logs) : 0;
+    // Pick whichever source has more logged data; cloud wins on tie (multi-device default)
+    if (cloudData && cloudEntries >= localEntries) {
+      applyData(cloudData);
+      try { localStorage.setItem('pl2025', JSON.stringify(S)); } catch(e) {}
+    } else if (localData) {
+      applyData(localData);
+      // Local has more — push it up to cloud so other devices get it
+      pushToSupabase();
     }
-    // else: local data already applied above
+    // else: no data anywhere, use defaults
     setSyncStatus('saved');
     setTimeout(function(){ setSyncStatus('idle'); }, 1500);
     renderAll();
   })
   .catch(function() {
     setSyncStatus('error');
-    // Local data already loaded above, just re-render
+    loadFromLocal();
     renderAll();
   });
 }
