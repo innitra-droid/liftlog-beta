@@ -415,6 +415,7 @@ var DEFAULT_PROGRAM = [
     // ACCESSORIES — all bench accessories here, 72hrs to Thursday
     {id:'d1e5',name:'Decline Fly',v:'2×8–12 · RPE 9',type:'accessory'},
     {id:'d1e6',name:'Tricep Pushdown',v:'3×8–10 · RPE 9 · use rope/V-bar — keeps wrists neutral',type:'accessory'},
+    {id:'d1e7',name:'Tricep Extension',v:'3×8–10 · RPE 9',type:'accessory',activeUntil:2},
     {id:'d1e8',name:'Rear Delt Raise',v:'3×10–12 · RPE 9',type:'accessory'},
     {id:'d1e9',name:'Lateral Raise',v:'3×10–12 · RPE 9',type:'accessory'}
   ]},
@@ -432,17 +433,19 @@ var DEFAULT_PROGRAM = [
   ]},
   { day:3, name:'Wed', rest:true, restLabel:'Rest', restEmoji:'&#128564;', exercises:[] },
   { day:4, name:'Thu', rest:false, exercises:[
-    // SECONDARY SQUAT: Pause HB Squat — 2-3s pause at bottom, builds power out of the hole
-    // W1: 1×3 RPE 5–6 | W2: 1×2–3 RPE 6–7 | W3★: 1×2 RPE 7–8 · always lighter than Mon
-    {id:'d4e1',name:'Pause HB Squat',v:'Top Set — W1: 1×3 · W2: 1×2–3 · W3★: 1×2 · 2–3s pause at bottom · lighter than Mon',type:'secondary'},
-    {id:'d4e2',name:'Pause HB Squat',v:'Back-off — 3×3 · weight fixed from W1 · maintain pause every rep',type:'backoff'},
-    // SECONDARY BENCH: Technique Bench — high rep, low load, elbow rehab + skill work
-    // 5×10-12 RPE 5-6 all weeks · drill soft lockout, bar path, neutral wrist every rep
-    {id:'d4e3',name:'Technique Bench',v:'5×10–12 · low intensity · drill soft lockout, bar path & neutral wrist · RPE 5–6 all weeks',type:'variation'},
+    // SECONDARY SQUAT: Weeks 1-2 Low Bar Squat, Weeks 3+ Pause HB Squat
+    {id:'d4e1',name:'Low Bar Squat',v:'Top Set — W1: 1×4–5 · W2: 1×4–5 · lighter than Mon',type:'secondary',activeUntil:2},
+    {id:'d4e2',name:'Low Bar Squat',v:'Back-off — 3×4–5 · weight fixed from W1',type:'backoff',activeUntil:2},
+    {id:'d4e1b',name:'Pause HB Squat',v:'Top Set — W1: 1×3 · W2: 1×2–3 · W3★: 1×2 · 2–3s pause at bottom · lighter than Mon',type:'secondary',activeFrom:3},
+    {id:'d4e2b',name:'Pause HB Squat',v:'Back-off — 3×3 · weight fixed from W1 of each block · maintain pause every rep',type:'backoff',activeFrom:3},
+    // SECONDARY BENCH: Weeks 1-2 Floor Press, Weeks 3+ Technique Bench
+    {id:'d4e3',name:'Floor Press',v:'Ascending 3×5 · No leg drive · W1: RPE 5/6/7 · W2: RPE 6/7/8 · W3: RPE 7/8/8',type:'variation',activeUntil:2},
+    {id:'d4e3b',name:'Technique Bench',v:'5×10–12 · low intensity · drill soft lockout, bar path & neutral wrist · RPE 5–6 all weeks',type:'variation',activeFrom:3},
     // ACCESSORIES
     {id:'d4e4',name:'Incline Fly',v:'2×8–12 · RPE 9',type:'accessory'},
     {id:'d4e5',name:'Tricep Pushdown',v:'3×8–10 · RPE 9 · use rope/V-bar — keeps wrists neutral throughout',type:'accessory'},
-    {id:'d4e6',name:'JM Press',v:'3×8–10 · low intensity · technique focus · bar path = close-grip bench not skull crusher · RPE 6–7',type:'accessory'},
+    {id:'d4e6',name:'Tricep Extension',v:'3×8–10 · RPE 9',type:'accessory',activeUntil:2},
+    {id:'d4e6b',name:'JM Press',v:'3×8–10 · low intensity · technique focus · bar path = close-grip bench not skull crusher · RPE 6–7',type:'accessory',activeFrom:3},
     {id:'d4e7',name:'Lateral Raise',v:'3×10–12 · RPE 9',type:'accessory'},
     {id:'d4e8',name:'Leg Extension',v:'2×8–12 · RPE 9',type:'accessory'},
     {id:'d4e9',name:'Leg Press',v:'3×8–10 · RPE 8–9',type:'accessory'}
@@ -453,11 +456,12 @@ var DEFAULT_PROGRAM = [
     // Back-off ~60% 1RM, fixed from W1
     {id:'d6e1',name:'Sumo Deadlift',v:'Top Set — W1: 1×2–3 · W2: 1×2 · W3★: 1×1',type:'main'},
     {id:'d6e2',name:'Sumo Deadlift',v:'Back-off — 3×4 · ~60% 1RM · weight fixed from W1',type:'backoff'},
-    // TERTIARY BENCH: light skill-practice single then high-rep volume + DB incline
+    // TERTIARY BENCH: single always present. Wide Grip Block weeks 1-2, Volume Bench + DB Incline weeks 3+
     // Single W1–2: RPE 5–6 | W3: RPE 6–7. Soft lockout cue on every rep.
     {id:'d6e3',name:'Bench Press',v:'Tertiary single — W1–2: RPE 5–6 · W3: RPE 6–7 · always well below Mon · soft lockout cue',type:'secondary'},
-    {id:'d6e4',name:'Bench Press',v:'5×15–20 · low intensity · soft lockout every rep · pec focus · RPE 5–6 all weeks',type:'variation'},
-    {id:'d6e9',name:'DB Incline Press',v:'3×6–8 · semi-neutral grip · elbow-friendly · RPE 7–8',type:'accessory'},
+    {id:'d6e4',name:'Wide Grip Block',v:'Ascending 3×8 · W1: RPE 6–7 · W2: RPE 7–8 · W3: RPE 8',type:'variation',activeUntil:2},
+    {id:'d6e4b',name:'Bench Press',v:'5×15–20 · low intensity · soft lockout every rep · pec focus · RPE 5–6 all weeks',type:'variation',activeFrom:3},
+    {id:'d6e9',name:'DB Incline Press',v:'3×6–8 · semi-neutral grip · elbow-friendly · RPE 7–8',type:'accessory',activeFrom:3},
     // ACCESSORIES
     {id:'d6e5',name:'Wide Grip Chin',v:'2–3×6–8 · RPE 8–9',type:'accessory'},
     {id:'d6e6',name:'Power Shrugs',v:'3×5–6 · heavy · explosive',type:'accessory'},
@@ -875,6 +879,8 @@ function renderDayContent() {
   var mainEx = [], accEx = [];
   for (var i = 0; i < dayData.exercises.length; i++) {
     var ex = dayData.exercises[i];
+    if (ex.activeFrom && S.week < ex.activeFrom) continue;
+    if (ex.activeUntil && S.week > ex.activeUntil) continue;
     if (ex.type === 'main' || ex.type === 'secondary' || ex.type === 'backoff' || ex.type === 'variation') mainEx.push(ex);
     else accEx.push(ex);
   }
@@ -1141,12 +1147,21 @@ function renderTable() {
     }
     for (var ei = 0; ei < dayData.exercises.length; ei++) {
       var ex = dayData.exercises[ei];
+      // Determine which weeks this exercise is active for
+      var exFrom = ex.activeFrom || 1;
+      var exUntil = ex.activeUntil || 9;
+      var rangeLabel = (ex.activeFrom || ex.activeUntil) ? ' <span style="font-size:.55rem;color:var(--muted)">(W' + exFrom + '–W' + exUntil + ')</span>' : '';
       html += '<tr>'
-        + '<td class="ex-cell">' + ex.name + (ex.v ? '<br><span style="color:var(--muted);font-size:.68rem">' + ex.v + '</span>' : '') + '</td>'
+        + '<td class="ex-cell">' + ex.name + rangeLabel + (ex.v ? '<br><span style="color:var(--muted);font-size:.68rem">' + ex.v + '</span>' : '') + '</td>'
         + '<td style="color:var(--muted);font-size:.72rem">' + (ex.type === 'main' ? 'Primary' : ex.type === 'secondary' ? 'Secondary' : ex.type === 'variation' ? 'Variation' : ex.type === 'backoff' ? 'Backoff' : 'Accessory') + '</td>';
       for (var w = 1; w <= 9; w++) {
         var cellId = 'tc_' + w + '_' + dayData.day + '_' + ex.id;
-        html += '<td id="' + cellId + '" style="min-width:110px">' + buildTblCell(w, dayData.day, ex.id) + '</td>';
+        var inactive = (w < exFrom || w > exUntil);
+        if (inactive) {
+          html += '<td style="background:rgba(255,255,255,.02);color:var(--border);font-size:.65rem;text-align:center">—</td>';
+        } else {
+          html += '<td id="' + cellId + '" style="min-width:110px">' + buildTblCell(w, dayData.day, ex.id) + '</td>';
+        }
       }
       html += '</tr>';
     }
@@ -1240,6 +1255,8 @@ function exportCSV() {
       if (dd.rest) continue;
       for (var ei = 0; ei < dd.exercises.length; ei++) {
         var ex = dd.exercises[ei];
+        if (ex.activeFrom && w < ex.activeFrom) continue;
+        if (ex.activeUntil && w > ex.activeUntil) continue;
         var log = S.logs[w] && S.logs[w][dd.day] && S.logs[w][dd.day][ex.id];
         if (!log || !log.sets.length) continue;
         for (var si = 0; si < log.sets.length; si++) {
